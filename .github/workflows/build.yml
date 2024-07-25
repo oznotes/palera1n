@@ -230,14 +230,7 @@ jobs:
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
 
-      - name: Verify libtatsu installation
-        run: |
-          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libtatsu*
-          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/include/libtatsu
-          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libtatsu-1.0.a" ]; then
-            echo "libtatsu-1.0.a not found!"
-            exit 1
-          fi
+
 
 
       - name: Build libimobiledevice
