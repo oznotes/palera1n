@@ -228,11 +228,16 @@ jobs:
           ./configure ${{ env.CONFIGURE_ARGS }} --enable-static --disable-shared
           make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
-          mkdir -p ${{ env.DESTDIR }}/usr/local/lib
-          # Check if .la file exists, if not, create a basic one
-          if [ ! -f "${{ env.DESTDIR }}/usr/local/lib/libtatsu-1.0.la" ]; then
-            echo "Creating basic .la file for libtatsu"
-            cat << EOF > ${{ env.DESTDIR }}/usr/local/lib/libtatsu-1.0.la
+          cd ..
+
+      - name: Verify libtatsu installation
+        run: |
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libtatsu*
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/include/libtatsu
+          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libtatsu-1.0.a" ]; then
+            echo "libtatsu-1.0.a not found!"
+            exit 1
+          fi
 
 
       - name: Build libimobiledevice
