@@ -106,9 +106,9 @@ jobs:
             -DENABLE_TESTING=OFF \
             -DCMAKE_BUILD_TYPE=Release \
             -DMBEDTLS_AESNI_C=OFF \
+            -DMBEDTLS_PADLOCK_C=OFF \
             -DMBEDTLS_HAVE_SSE2=OFF \
-            -DMBEDTLS_HAVE_X86_64=OFF \
-            -DCMAKE_C_FLAGS="${CFLAGS} -march=i486 -mtune=i486"
+            -DCMAKE_C_FLAGS="-march=i486 -mtune=i486"
           make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
           cd ../..
