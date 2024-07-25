@@ -158,12 +158,21 @@ jobs:
       - name: Build readline
         run: |
           cd readline-${{ env.READLINE_VERSION }}
-          export CFLAGS="$CFLAGS -I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
+          export CFLAGS="$CFLAGS -I${{ env.DESTDIR }}${{ env.PREFIX }}/include/ncurses"
           export LDFLAGS="$LDFLAGS -L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
           ./configure ${{ env.CONFIGURE_ARGS }} --with-curses
-          make -j$(nproc)
+          make -j$(nproc) SHLIB_LIBS="-lncurses"
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
+      - name: Verify readline installation
+        run: |
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libreadline.*
+          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libreadline.a" ]; then
+            echo "libreadline.a not found!"
+            exit 1
+          fi
+          nm ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libreadline.a | grep tputs
 
       - name: Build libplist
         run: |
@@ -341,23 +350,23 @@ jobs:
         run: |
           cd libimobiledevice
           export PKG_CONFIG_PATH=${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig:$PKG_CONFIG_PATH
-          export OPENSSL_CFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
-          export OPENSSL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lssl -lcrypto"
-          export LIBCURL_CFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
-          export LIBCURL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lcurl"
-          export LDFLAGS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
-          export CPPFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
-          export LIBRARY_PATH=${{ env.DESTDIR }}${{ env.PREFIX }}/lib
+          export CFLAGS="$CFLAGS -I${{ env.DESTDIR }}${{ env.PREFIX }}/include/ncurses"
+          export LDFLAGS="$LDFLAGS -L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
+          export LIBS="-lncurses"
           ./autogen.sh
           ./configure ${{ env.CONFIGURE_ARGS }} --without-cython --enable-static --disable-shared \
             LIBCURL_CFLAGS="$LIBCURL_CFLAGS" LIBCURL_LIBS="$LIBCURL_LIBS" \
-            LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS"
-          sed -i "s|^sys_lib_dlsearch_path_spec=.*|sys_lib_dlsearch_path_spec=\"${{ env.DESTDIR }}${{ env.PREFIX }}/lib\"|" libtool
-          sed -i 's|^\(library_names\)=.*|\1=""|' libtool
-          sed -i "s|-L/usr/local/lib|-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib|g" libtool
-          sed -i "s|/usr/local/lib|${{ env.DESTDIR }}${{ env.PREFIX }}/lib|g" libtool
-          make -j$(nproc) V=1 LDFLAGS="$LDFLAGS" LIBRARY_PATH="$LIBRARY_PATH"
+            LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS" LIBS="$LIBS"
+          make -j$(nproc) V=1
           make install DESTDIR=${{ env.DESTDIR }}
+          cd ..
+
+      - name: Check libimobiledevice linking
+        run: |
+          cd libimobiledevice
+          make V=1 2>&1 | tee build_output.log
+          grep -i "undefined reference" build_output.log || echo "No undefined references found"
+          grep -i "cannot find" build_output.log || echo "No missing libraries found"
           cd ..
 
       - name: Verify Makefile
