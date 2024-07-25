@@ -36,7 +36,6 @@ jobs:
       - name: Install Cygwin
         run: |
           choco install cygwin -y
-          refreshenv
 
       - name: Add Cygwin to PATH
         shell: bash
