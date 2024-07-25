@@ -28,17 +28,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Cygwin
+      - name: Install Cygwin
         run: |
-          choco install cygwin
-          choco install cygwin --params "'/InstallDir:C:\\cygwin64 /Packages:make,gcc-core,gcc-g++,libssl-devel'"
+          choco install cygwin --params "/InstallDir:C:\\cygwin64"
+          echo "::add-path::C:\\cygwin64\\bin"
 
-      - name: Add Cygwin to PATH
-        run: echo "C:\\cygwin64\\bin" >> $GITHUB_PATH
-
-      - name: Install dependencies
+      - name: Install Cygwin packages
         run: |
-          C:\\cygwin64\\bin\\bash -c "apt-cyg install make gcc-core gcc-g++ libssl-devel"
+          C:\\cygwin64\\setup-x86_64.exe -q -P make,gcc-core,gcc-g++,libssl-devel
 
       - name: Build palera1n
         run: |
@@ -49,4 +46,3 @@ jobs:
         with:
           name: palera1n-windows
           path: ./src/palera1n
-
