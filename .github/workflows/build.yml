@@ -259,6 +259,7 @@ jobs:
             --openssldir=${{ env.PREFIX }}/openssl \
             CC=$CC AR=$AR RANLIB=$RANLIB
           sed -i 's/CROSS_COMPILE=.*/CROSS_COMPILE=/' Makefile
+          cat Makefile | grep -E "^CC=|^AR=|^RANLIB="
           make -j$(nproc)
           make install_sw DESTDIR=${{ env.DESTDIR }}
           cd ..
