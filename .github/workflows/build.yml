@@ -76,7 +76,7 @@ jobs:
           git clone --depth=1 https://github.com/libimobiledevice/libusbmuxd
           git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice
           git clone --depth=1 https://github.com/libimobiledevice/usbmuxd
-          git clone --depth=1 https://github.com/fxsheep/libtatsu
+          git clone --depth=1 https://github.com/libimobiledevice/libtatsu
 
 
 
