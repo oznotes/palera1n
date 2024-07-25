@@ -98,6 +98,10 @@ jobs:
       - name: Build Mbed TLS
         run: |
           cd mbedtls-${{ env.MBEDTLS_VERSION }}
+          
+          # Modify the config file to disable AESNI
+          sed -i 's/#define MBEDTLS_AESNI_C/\/\/ #define MBEDTLS_AESNI_C/' include/mbedtls/mbedtls_config.h
+          
           mkdir build && cd build
           cmake .. \
             -DCMAKE_TOOLCHAIN_FILE=../../i486-linux-musl-toolchain.cmake \
@@ -105,10 +109,9 @@ jobs:
             -DENABLE_PROGRAMS=OFF \
             -DENABLE_TESTING=OFF \
             -DCMAKE_BUILD_TYPE=Release \
-            -DMBEDTLS_AESNI_C=OFF \
-            -DMBEDTLS_PADLOCK_C=OFF \
             -DMBEDTLS_HAVE_SSE2=OFF \
-            -DCMAKE_C_FLAGS="-march=i486 -mtune=i486"
+            -DMBEDTLS_HAVE_X86_64=OFF \
+            -DCMAKE_C_FLAGS="${CFLAGS} -march=i486 -mtune=i486"
           make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
           cd ../..
