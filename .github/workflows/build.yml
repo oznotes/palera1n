@@ -33,7 +33,7 @@ jobs:
         run: |
           choco install cygwin -y
           choco install cyg-get -y
-          cyg-get make gcc-core gcc-g++ libssl-devel autoconf automake libtool pkg-config
+          cyg-get make gcc-core gcc-g++ libssl-devel autoconf automake libtool
 
       - name: Add Cygwin to PATH
         run: |
