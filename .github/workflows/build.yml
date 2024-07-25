@@ -213,12 +213,11 @@ jobs:
           ./configure ${{ env.CONFIGURE_ARGS }} --disable-shared --enable-static --disable-ldap --without-ssl
           make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
-          # Ensure .la file is in the correct location and has the correct path
-          if [ -f "lib/.libs/libcurl.la" ]; then
-            sed -i "s|libdir='.*'|libdir='${{ env.PREFIX }}/lib'|" lib/.libs/libcurl.la
-            cp lib/.libs/libcurl.la ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/
-          fi
+          # Create a symlink in /usr/local/lib
+          sudo mkdir -p /usr/local/lib
+          sudo ln -sf ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.la /usr/local/lib/libcurl.la
           cd ..
+
       - name: Verify libcurl installation
         run: |
           ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.*
