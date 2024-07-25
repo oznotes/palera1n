@@ -142,18 +142,19 @@ jobs:
           ./configure ${{ env.CONFIGURE_ARGS }} --disable-udev
           make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
-          mkdir -p ${{ env.DESTDIR }}/usr/local/lib
-          # Copy the .la file from the correct location
-          cp libusb/.libs/libusb-1.0.la ${{ env.DESTDIR }}/usr/local/lib/
+          # Ensure pkg-config file is in the correct location
+          mkdir -p ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig
+          cp libusb-1.0.pc ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig/
           cd ..
 
-      - name: Verify libusb .la file
+      - name: Verify libusb installation
         run: |
-          ls -l ${{ env.DESTDIR }}/usr/local/lib/libusb-1.0.la
-          if [ ! -f "${{ env.DESTDIR }}/usr/local/lib/libusb-1.0.la" ]; then
-            echo "libusb-1.0.la not found!"
-            exit 1
-          fi
+          echo "libusb headers:"
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/include/libusb-1.0
+          echo "libusb libraries:"
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libusb*
+          echo "libusb pkg-config file:"
+          cat ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig/libusb-1.0.pc
 
       - name: Build readline
         run: |
@@ -397,14 +398,28 @@ jobs:
         run: |
           cd libirecovery
           export PKG_CONFIG_PATH=${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig:$PKG_CONFIG_PATH
-          export CFLAGS="$CFLAGS -I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
+          export CFLAGS="$CFLAGS -I${{ env.DESTDIR }}${{ env.PREFIX }}/include/libusb-1.0 -I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
           export LDFLAGS="$LDFLAGS -L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
+          export LIBUSB_1_0_CFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include/libusb-1.0"
+          export LIBUSB_1_0_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lusb-1.0"
           ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --enable-static --disable-shared LIBS="-lncurses"
-          make -j$(nproc)
+          ./configure ${{ env.CONFIGURE_ARGS }} --enable-static --disable-shared
+          make -j$(nproc) V=1
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
-
+      - name: Check libirecovery build
+        run: |
+          cd libirecovery
+          make V=1 2>&1 | tee build_output.log
+          echo "Checking for header not found errors:"
+          grep -i "fatal error" build_output.log || echo "No header not found errors"
+          echo "Checking for undefined references:"
+          grep -i "undefined reference" build_output.log || echo "No undefined references found"
+          echo "Checking for missing libraries:"
+          grep -i "cannot find" build_output.log || echo "No missing libraries found"
+          echo "Compilation commands:"
+          grep -E "^(gcc|cc)" build_output.log
+          cd ..
       - name: Build palera1n
         run: |
           # Check if sysroot directories exist
