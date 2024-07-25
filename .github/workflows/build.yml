@@ -41,7 +41,7 @@ jobs:
           tar xzf 2.2.0.tar.gz
           cd libplist-2.2.0
           ./autogen.sh
-          ./configure --host=x86_64-w64-mingw32 --prefix=/usr/local/x86_64-w64-mingw32
+          ./configure --host=x86_64-w64-mingw32 --prefix=/usr/local/x86_64-w64-mingw32 --disable-shared --enable-static
           make
           sudo make install
           export PKG_CONFIG_PATH=/usr/local/x86_64-w64-mingw32/lib/pkgconfig:$PKG_CONFIG_PATH
@@ -52,7 +52,7 @@ jobs:
           tar xzf 2.0.2.tar.gz
           cd libusbmuxd-2.0.2
           ./autogen.sh
-          ./configure --host=x86_64-w64-mingw32 --prefix=/usr/local/x86_64-w64-mingw32
+          ./configure --host=x86_64-w64-mingw32 --prefix=/usr/local/x86_64-w64-mingw32 --disable-shared --enable-static
           make
           sudo make install
           export PKG_CONFIG_PATH=/usr/local/x86_64-w64-mingw32/lib/pkgconfig:$PKG_CONFIG_PATH
