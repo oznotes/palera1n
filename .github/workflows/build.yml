@@ -251,7 +251,12 @@ jobs:
       - name: Build OpenSSL
         run: |
           cd openssl-1.1.1k
-          ./Configure ${{ env.CONFIGURE_ARGS }} no-shared linux-x86
+          export CC=i486-linux-musl-gcc
+          export AR=i486-linux-musl-ar
+          export RANLIB=i486-linux-musl-ranlib
+          ./Configure linux-generic32 no-shared no-asm \
+            --prefix=${{ env.PREFIX }} \
+            --openssldir=${{ env.PREFIX }}/openssl
           make -j$(nproc)
           make install_sw DESTDIR=${{ env.DESTDIR }}
           cd ..
