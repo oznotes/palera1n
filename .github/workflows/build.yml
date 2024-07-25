@@ -32,8 +32,8 @@ jobs:
       - name: Install Cygwin with required packages
         run: |
           choco install cygwin -y
-          choco install cyg-get -y
-          cyg-get make gcc-core gcc-g++ libssl-devel autoconf automake libtool
+          curl -LO https://cygwin.com/setup-x86_64.exe
+          ./setup-x86_64.exe -q -P make,gcc-core,gcc-g++,libssl-devel,autoconf,automake,libtool
 
       - name: Add Cygwin to PATH
         run: |
