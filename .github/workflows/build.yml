@@ -29,15 +29,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Cygwin with required packages
+      - name: Install Chocolatey
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force; `
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; `
+          iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+
+      - name: Install Cygwin and required packages
         run: |
           choco install cygwin -y
-          choco install cyg-get -y
-          cyg-get make gcc-core gcc-g++ libssl-devel
+          choco install cygwin-setup -y
+          refreshenv
+          cygwin-setup -q -P make,gcc-core,gcc-g++,libssl-devel
 
       - name: Add Cygwin to PATH
         run: |
-          echo "C:\\tools\\cygwin\\bin" >> $GITHUB_PATH
+          echo "C:\\tools\\cygwin\\bin" >> $env:GITHUB_PATH
 
       - name: Build palera1n
         shell: bash
