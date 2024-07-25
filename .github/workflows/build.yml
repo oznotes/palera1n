@@ -30,18 +30,23 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install Chocolatey
-        run: |
-          Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        shell: powershell
+        run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
       - name: Install Cygwin
+        shell: powershell
         run: choco install cygwin -y
 
       - name: Add Cygwin to PATH
-        shell: bash
-        run: echo "C:\\tools\\cygwin\\bin" >> $GITHUB_PATH
+        shell: powershell
+        run: echo "C:\\tools\\cygwin\\bin" >> $env:GITHUB_PATH
 
       - name: Install required packages with Cygwin
-        run: C:\tools\cygwin\cygwin.bat -c "apt-cyg install make gcc-core gcc-g++ libssl-devel"
+        shell: bash
+        run: |
+          /cygwin64/bin/bash -c "apt-cyg install make gcc-core gcc-g++ libssl-devel"
 
       - name: Build palera1n
-        run: C:\tools\cygwin\cygwin.bat -c "make all"
+        shell: bash
+        run: |
+          /cygwin64/bin/bash -c "make all"
