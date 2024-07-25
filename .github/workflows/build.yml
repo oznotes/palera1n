@@ -32,11 +32,13 @@ jobs:
         run: |
           sudo apt-get -y update
           sudo apt-get -y install mandoc make
+
       - name: Build Documentation
         run: |
           make -j$(nproc) docs
           mkdir -p ready/docs
           cp docs/*.html docs/mandoc.css docs/palera1n.1 ready/docs
+
       - name: Get branch name
         id: branch-name
         uses: tj-actions/branch-names@v7
@@ -93,12 +95,15 @@ jobs:
           sudo rm -rf /usr/local/Frameworks/Python*
           curl -LO https://github.com/ProcursusTeam/ldid/releases/download/v2.1.5-procursus7/ldid_macosx_x86_64
           sudo install -m755 ldid_macosx_x86_64 /usr/local/bin/ldid
+
       - name: Download dependencies (embedded binaries)
         run: |
           echo "SDK=$(xcrun -sdk ${{ matrix.os }} --show-sdk-path)" >> $GITHUB_ENV
+
       - name: Select correct Xcode
         run: |
           sudo xcode-select -s /Applications/Xcode_14.2.app
+
       - name: Setup environment
         run: |
           mkdir sysroot
@@ -117,12 +122,14 @@ jobs:
           echo "CXXFLAGS_FOR_BUILD=-stdlib=libc++ -arch $(uname -m) -isysroot $(xcrun -sdk macosx --show-sdk-path) -Os" >> $GITHUB_ENV
           echo "CPPFLAGS_FOR_BUILD=-arch $(uname -m) -isysroot $(xcrun -sdk macosx --show-sdk-path) -Wno-error-implicit-function-declaration -Os" >> $GITHUB_ENV
           echo "LDFLAGS_FOR_BUILD=-Wl,-dead_strip" >> $GITHUB_ENV
+
       - name: Prepare iPhoneOS environment
         if: matrix.os == 'iphoneos'
         run: |
           echo "FAKE_PLATFORM=2" >> $GITHUB_ENV
           echo "FAKE_SDK=7.0" >> $GITHUB_ENV
           echo "FAKE_MINOS=7.0" >> $GITHUB_ENV
+
       - name: Prepare headers
         if: matrix.os != 'macosx'
         run: |
@@ -154,6 +161,7 @@ jobs:
           gsed -E s/'__IOS_PROHIBITED|__TVOS_PROHIBITED|__WATCHOS_PROHIBITED'//g < ${TARGET_SYSROOT}/usr/include/signal.h > sysroot/usr/local/include/signal.h
           gsed -E /'__API_UNAVAILABLE'/d < ${TARGET_SYSROOT}/usr/include/pthread.h > sysroot/usr/local/include/pthread.h
           gsed -i -E s/'__API_UNAVAILABLE\(.*\)'// sysroot/usr/local/include/IOKit/IOKitLib.h
+
       - name: Check dependencies cache
         run: |
           echo "target: ${{ matrix.os }}-${{ matrix.arch }}" > cache.txt
@@ -166,6 +174,7 @@ jobs:
           echo "libusbmuxd: ${{ env.LIBUSBMUXD_COMMIT }}" >> cache.txt
           echo "cc: $($(xcrun --find cc) --version)" >> cache.txt
           echo "CACHE_TXT_CHECKSUM=sysroot-$(shasum -a 512 cache.txt | cut -d' ' -f1)" >> $GITHUB_ENV
+
       - name: Download cached sysroot
         id: sysroot_cache
         uses: actions/cache@v3
@@ -177,17 +186,20 @@ jobs:
         if: steps.sysroot_cache.outputs.cache-hit == 'true'
         run: |
           xz -dcT0 sysroot-${{ env.CACHE_TXT_CHECKSUM }}.txz | tar -x
+
       - name: Setup sysroot
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p $(pwd)/sysroot/usr/local/lib
           ln -sf $(pwd)/sysroot/usr/local/lib{,64}
+
       - name: Download dependencies (source code)
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
           curl -LOOOOOO \
             https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v${{ env.MBEDTLS_VERSION }}.tar.gz \
             https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz
+
           tar -xf v${{ env.MBEDTLS_VERSION }}.tar.gz
           tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
           git clone --depth=1 https://github.com/libimobiledevice/libplist
@@ -200,6 +212,7 @@ jobs:
           cd libimobiledevice-glue && git fetch origin ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }} && git reset --hard ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }} && cd ..
           cd libimobiledevice && git fetch origin ${{ env.LIBIMOBILEDEVICE_COMMIT }} && git reset --hard ${{ env.LIBIMOBILEDEVICE_COMMIT }} && cd ..
           cd libusbmuxd && git fetch origin ${{ env.LIBUSBMUXD_COMMIT }} && git reset --hard ${{ env.LIBUSBMUXD_COMMIT }} && cd ..
+
       - name: Build Mbed TLS
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -224,6 +237,7 @@ jobs:
              SDKROOT="${{ env.SDK }}"
           gmake -j$(sysctl -n hw.ncpu) install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
       - name: Build readline
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -232,6 +246,7 @@ jobs:
           gmake -j$(sysctl -n hw.ncpu)
           gmake -j$(sysctl -n hw.ncpu) install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
       - name: Build libplist
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -241,6 +256,7 @@ jobs:
           gmake -j$(sysctl -n hw.ncpu)
           gmake -j$(sysctl -n hw.ncpu) install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
       - name: Build libimobiledevice-glue
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -250,6 +266,7 @@ jobs:
           gmake -j$(sysctl -n hw.ncpu)
           gmake -j$(sysctl -n hw.ncpu) install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
       - name: Build libirecovery
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -265,6 +282,7 @@ jobs:
           make -j$(sysctl -n hw.ncpu) install DESTDIR=${{ env.DESTDIR }}
           install -m644 src/.libs/libirecovery-1.0.a ${{ env.DESTDIR }}${{ env.PREFIX }}/lib
           cd ..
+
       - name: Build libusbmuxd
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -274,6 +292,7 @@ jobs:
           gmake -j$(sysctl -n hw.ncpu)
           gmake -j$(sysctl -n hw.ncpu) install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
       - name: Build libimobiledevice
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -284,6 +303,7 @@ jobs:
           gmake -j$(sysctl -n hw.ncpu)
           gmake -j$(sysctl -n hw.ncpu) install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
       - name: Build palera1n
         run: |
           cp -a sysroot/${{ env.PREFIX }}/{include,lib} dep_root
@@ -293,11 +313,13 @@ jobs:
           cp src/palera1n palera1n-${{ matrix.os }}-${{ matrix.arch }}
           dsymutil palera1n-${{ matrix.os }}-${{ matrix.arch }}
           strip palera1n-${{ matrix.os }}-${{ matrix.arch }}
+
       - name: Build palera1n (Development)
         run: |
           gmake -j$(sysctl -n hw.ncpu) clean
           gmake -j$(sysctl -n hw.ncpu) DEV_BUILD=1 TUI=1 ROOTFUL=1
           cp src/palera1n palera1n-${{ matrix.os }}-${{ matrix.arch }}.development
+
       - name: Prepare artifact
         run: |
           mkdir -p ready/build_depends
@@ -307,6 +329,7 @@ jobs:
           else
             ldid -Ssrc/usb.xml palera1n-${{ matrix.os }}-${{ matrix.arch }}{,.development}
           fi
+
       - name: Get branch name
         id: branch-name
         uses: tj-actions/branch-names@v7
@@ -353,6 +376,7 @@ jobs:
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
           tar -c sysroot | xz -zce9T 0 > sysroot-${{ env.CACHE_TXT_CHECKSUM }}.txz
+
   darwin-dist:
     if: ${{ github.event_name != 'pull_request' }}
     runs-on: macos-latest
@@ -393,15 +417,18 @@ jobs:
           zip -r9 ready/debug_symbols/palera1n-macosx-arm64.dSYM.zip palera1n-macosx-arm64.dSYM
           zip -r9 ready/debug_symbols/palera1n-macosx-x86_64.dSYM.zip palera1n-macosx-x86_64.dSYM
           zip -r9 ready/debug_symbols/palera1n-macos.dSYM.zip palera1n-macos.dSYM
+
       - name: Build debs
         run: |
           make -j$(sysctl -n hw.ncpu) docs
           version=$(git describe --dirty --tags --abbrev=7 | sed 's|^v||' | sed 's|-beta|~beta|')
+
           # Darwin x86_64
           mkdir -p stage/DEBIAN
           mkdir -p stage/opt/procursus/bin
           mkdir -p stage/opt/procursus/usr/share/man/man1
           cp packaging/control.macosx stage/DEBIAN/control
+
           gsed 's|@DEB_ARCH@|darwin-amd64|g' -i stage/DEBIAN/control
           gsed "s|@DEB_VERSION@|$version|g" -i stage/DEBIAN/control
           
@@ -409,13 +436,16 @@ jobs:
           zstd -c19 docs/palera1n.1 > stage/opt/procursus/usr/share/man/man1/palera1n.1.zst
           chmod 644 stage/opt/procursus/usr/share/man/man1/palera1n.1.zst
           chmod 755 stage/opt/procursus/bin/palera1n
+
           dpkg-deb --root-owner-group -Zzstd -b stage palera1n_darwin-amd64.deb
           rm -rf stage
+
           # Darwin arm64
           mkdir -p stage/DEBIAN
           mkdir -p stage/opt/procursus/bin
           mkdir -p stage/opt/procursus/usr/share/man/man1
           cp packaging/control.macosx stage/DEBIAN/control
+
           gsed 's|@DEB_ARCH@|darwin-arm64|g' -i stage/DEBIAN/control
           gsed "s|@DEB_VERSION@|$version|g" -i stage/DEBIAN/control
           
@@ -423,13 +453,16 @@ jobs:
           zstd -c19 docs/palera1n.1 > stage/opt/procursus/usr/share/man/man1/palera1n.1.zst
           chmod 644 stage/opt/procursus/usr/share/man/man1/palera1n.1.zst
           chmod 755 stage/opt/procursus/bin/palera1n
+
           dpkg-deb --root-owner-group -Zzstd -b stage palera1n_darwin-arm64.deb
           rm -rf stage
+
           # iPhoneOS
           mkdir -p stage/DEBIAN
           mkdir -p stage/usr/bin
           mkdir -p stage/usr/share/man/man1
           cp packaging/control stage/DEBIAN/control
+
           gsed 's|@DEB_ARCH@|iphoneos-arm|g' -i stage/DEBIAN/control
           gsed "s|@DEB_VERSION@|$version|g" -i stage/DEBIAN/control
           
@@ -437,13 +470,16 @@ jobs:
           zstd -c19 docs/palera1n.1 > stage/usr/share/man/man1/palera1n.1.zst
           chmod 644 stage/usr/share/man/man1/palera1n.1.zst
           chmod 755 stage/usr/bin/palera1n
+
           dpkg-deb --root-owner-group -Zzstd -b stage palera1n_iphoneos-arm.deb
           rm -rf stage
+
           # iPhoneOS (rootless)
           mkdir -p stage/DEBIAN
           mkdir -p stage/var/jb/usr/bin
           mkdir -p stage/var/jb/usr/share/man/man1
           cp packaging/control stage/DEBIAN/control
+
           gsed 's|@DEB_ARCH@|iphoneos-arm64|g' -i stage/DEBIAN/control
           gsed "s|@DEB_VERSION@|$version|g" -i stage/DEBIAN/control
           
@@ -451,8 +487,10 @@ jobs:
           zstd -c19 docs/palera1n.1 > stage/var/jb/usr/share/man/man1/palera1n.1.zst
           chmod 644 stage/var/jb/usr/share/man/man1/palera1n.1.zst
           chmod 755 stage/var/jb/usr/bin/palera1n
+
           dpkg-deb --root-owner-group -Zzstd -b stage palera1n_iphoneos-arm64.deb
           rm -rf stage
+
           mv palera1n*.deb ready/debian
 
       - name: Save build tag
@@ -513,10 +551,12 @@ jobs:
           sudo apt-get remove -y libssl-dev libreadline-dev
           sudo apt-get install -y pkg-config autoconf automake autopoint mandoc
           sudo pip3 install jsonschema jinja2
+
       - name: Download toolchain checksum
         run: |
           curl -LO https://musl.cc/SHA512SUMS
           echo "TOOLCHAIN_CHECKSUM="$(grep ${{ matrix.triple }}-cross.tgz SHA512SUMS | cut -d' ' -f1) >> $GITHUB_ENV
+
       - name: Download toolchain (cached)
         id: toolchain_cache
         uses: actions/cache@v3
@@ -528,6 +568,7 @@ jobs:
         if: steps.toolchain_cache.outputs.cache-hit != 'true'
         run: |
           curl -LO https://musl.cc/${{ matrix.triple }}-cross.tgz
+
       - name: Setup environment
         run: |
           tar -xf ${{ matrix.triple }}-cross.tgz
@@ -560,6 +601,7 @@ jobs:
           echo "PREFIX=/usr/local" >> $GITHUB_ENV
           echo "CONFIGURE_ARGS=--build=x86_64-linux-gnu --host=${{ matrix.triple }} --prefix=/usr/local --disable-shared --enable-static" >> $GITHUB_ENV
           echo "CROSS_COMPILE=${{ matrix.triple }}-" >> $GITHUB_ENV
+
       - name: Check dependencies cache
         run: |
           echo "target: ${{ matrix.triple }}" > cache.txt
@@ -573,6 +615,7 @@ jobs:
           echo "usbmuxd: ${{ env.USBMUXD_COMMIT }}" >> cache.txt
           echo "cc: $(${{ env.CROSS_COMPILE }}gcc --version)" >> cache.txt
           echo "CACHE_TXT_CHECKSUM=sysroot-$(sha512sum cache.txt | cut -d' ' -f1)" >> $GITHUB_ENV
+
       - name: Download cached sysroot
         id: sysroot_cache
         uses: actions/cache@v3
@@ -584,11 +627,13 @@ jobs:
         if: steps.sysroot_cache.outputs.cache-hit == 'true'
         run: |
           xz -dcT0 sysroot-${{ env.CACHE_TXT_CHECKSUM }}.txz | tar -x
+
       - name: Setup sysroot
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p $(pwd)/sysroot/usr/local/lib
           ln -sf $(pwd)/sysroot/usr/local/lib{,64}
+
       - name: Download dependencies (source code)
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -597,6 +642,7 @@ jobs:
             https://github.com/libusb/libusb/releases/download/v${{ env.LIBUSB_VERSION }}/libusb-${{ env.LIBUSB_VERSION }}.tar.bz2 \
             https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz \
             https://github.com/telmich/gpm/archive/refs/tags/${{ env.GPM_VERSION }}.tar.gz
+
           tar -xf v${{ env.MBEDTLS_VERSION }}.tar.gz
           tar -xjf libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
           tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
@@ -613,6 +659,7 @@ jobs:
           cd usbmuxd && git fetch origin ${{ env.USBMUXD_COMMIT }} && git reset --hard ${{ env.USBMUXD_COMMIT }} && cd ..
           cd libimobiledevice && git fetch origin ${{ env.LIBIMOBILEDEVICE_COMMIT }} && git reset --hard ${{ env.LIBIMOBILEDEVICE_COMMIT }} && cd ..
           cd libusbmuxd && git fetch origin ${{ env.LIBUSBMUXD_COMMIT }} && git reset --hard ${{ env.LIBUSBMUXD_COMMIT }} && cd ..
+
       - name: Build Mbed TLS
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -637,6 +684,7 @@ jobs:
           make -j$(nproc)
           make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
       - name: Build libusb
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -645,6 +693,7 @@ jobs:
           make -j$(nproc)
           make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
       - name: Build readline
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -653,6 +702,7 @@ jobs:
           make -j$(nproc)
           make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
       - name: Build GPM
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -664,6 +714,7 @@ jobs:
           gmake -j$(sysctl -n hw.ncpu)
           gmake -j$(sysctl -n hw.ncpu) install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
       - name: Build libplist
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -673,6 +724,7 @@ jobs:
           make -j$(nproc)
           make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
       - name: Build libimobiledevice-glue
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -682,6 +734,7 @@ jobs:
           make -j$(nproc)
           make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
       - name: Build libirecovery (sorta)
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -695,6 +748,7 @@ jobs:
           make -ij$(nproc) install DESTDIR=${{ env.DESTDIR }}
           install -m644 src/.libs/libirecovery-1.0.a ${{ env.DESTDIR }}${{ env.PREFIX }}/lib
           cd ..
+
       - name: Build libusbmuxd
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -704,6 +758,7 @@ jobs:
           make -j$(nproc)
           make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
       - name: Build libimobiledevice
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -716,6 +771,7 @@ jobs:
           cd ..
           sudo rm /usr/local
           sudo mv /usr/local.bak /usr/local
+
       - name: Build usbmuxd
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
@@ -732,6 +788,7 @@ jobs:
           ${{ matrix.triple }}-objcopy --add-gnu-debuglink=usbmuxd.debug usbmuxd
           install -m755 usbmuxd usbmuxd.debug ${{ env.DESTDIR }}/${{ env.PREFIX }}/sbin
           cd ..
+
       - name: Build palera1n
         run: |
           cp -a ${{ env.DESTDIR }}/${{ env.PREFIX }}/{include,lib} dep_root
@@ -739,17 +796,20 @@ jobs:
           find dep_root -name '*.la' -delete
           CC="${{ matrix.triple }}-gcc" make -j$(nproc) ROOTFUL=1
           cp src/palera1n palera1n.release
+
       - name: Seperate debug symbols
         run: |
           ${{ matrix.triple }}-objcopy --only-keep-debug palera1n.release palera1n.debug
           ${{ matrix.triple }}-strip --strip-debug --strip-unneeded palera1n.release
           ${{ matrix.triple }}-objcopy --add-gnu-debuglink=palera1n.debug palera1n.release
           chmod -x palera1n.debug
+
       - name: Build palera1n (Development)
         run: |
           CC="${{ matrix.triple }}-gcc" make -j$(nproc) clean
           CC="${{ matrix.triple }}-gcc" make -j$(nproc) DEV_BUILD=1 ROOTFUL=1
           cp src/palera1n palera1n.development
+
       - name: Prepare artifact
         run: |
           mkdir -p ready/{binaries,debian,binaries_development,build_depends,debug_symbols} usbmuxd-static
@@ -759,23 +819,29 @@ jobs:
           tar -zcf ready/build_depends/dep_root_${{ matrix.triple }}.tgz dep_root
           install -m755 sysroot/${{ env.PREFIX }}/sbin/usbmuxd usbmuxd-static/usbmuxd-${{ env.CHECKRA1N_NAME }}
           install -m755 sysroot/${{ env.PREFIX }}/sbin/usbmuxd.debug usbmuxd-static/usbmuxd-${{ env.CHECKRA1N_NAME }}.debug
+
       - name: Build debs
         run: |
           version=$(git describe --dirty --tags --abbrev=7 | sed 's|^v||' | sed 's|-beta|~beta|')
+
           make -j$(nproc) docs
           mkdir -p stage/DEBIAN
           mkdir -p stage/usr/bin
           mkdir -p stage/usr/share/man/man1
           cp packaging/control stage/DEBIAN/control
+
           sed 's|@DEB_ARCH@|${{ env.ARCH_NAME }}|g' -i stage/DEBIAN/control
           sed "s|@DEB_VERSION@|$version|g" -i stage/DEBIAN/control
+
           install -Dm644 ready/binaries/palera1n-${{ env.CHECKRA1N_NAME }} stage/usr/bin/palera1n
           gzip -c9 docs/palera1n.1 > stage/usr/share/man/man1/palera1n.1.gz
           chmod 755 stage/usr/bin/palera1n
           chmod 644 stage/usr/share/man/man1/palera1n.1.gz
+
           dpkg-deb --root-owner-group -b stage palera1n_${{ env.ARCH_NAME }}.deb
           mv palera1n*.deb ready/debian
           rm -rf stage
+
       - name: Get branch name
         id: branch-name
         uses: tj-actions/branch-names@v7
@@ -810,6 +876,7 @@ jobs:
         if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
           tar -c sysroot | xz -zce9T 0 > sysroot-${{ env.CACHE_TXT_CHECKSUM }}.txz
+
   finish-build:
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'pull_request' }}
@@ -836,5 +903,4 @@ jobs:
         run: |
           COMMITMESSAGE=`git log --pretty=format:'- \`%h\` %s' -1 --reverse` &&
           (curl "${{ secrets.DISCORD_WEBHOOK }}" -sS -H "Content-Type:application/json" -X POST -d "{\"content\":null,\"embeds\":[{\"title\":\"[palera1n:${{ steps.branch-name.outputs.ref_branch }}] Nightly Build ${{ github.run_number }}\",\"url\":\"https://github.com/palera1n/palera1n/actions/runs/${GITHUB_RUN_ID}\",\"color\":2829617,\"fields\":[{\"name\":\"Build tag\",\"value\":\"- \`$(cat build-tag.txt | sed 's|\n||')\`\"},{\"name\":\"Destination\",\"value\":\"- https://cdn.nickchan.lol/palera1n/artifacts/c-rewrite/${{ steps.branch-name.outputs.ref_branch }}/${{ github.run_number }}\"},{\"name\":\"Documentation\",\"value\":\"- [palera1n.1.html](https://cdn.nickchan.lol/palera1n/artifacts/c-rewrite/${{ steps.branch-name.outputs.ref_branch }}/${{ github.run_number }}/docs/palera1n.1.html)\"},{\"name\":\"Main Artifacts\",\"value\":\"- [palera1n-iphoneos-arm64](https://cdn.nickchan.lol/palera1n/artifacts/c-rewrite/${{ steps.branch-name.outputs.ref_branch }}/${{ github.run_number }}/binaries/palera1n-iphoneos-arm64)\n- [palera1n-linux-arm64](https://cdn.nickchan.lol/palera1n/artifacts/c-rewrite/${{ steps.branch-name.outputs.ref_branch }}/${{ github.run_number }}/binaries/palera1n-linux-arm64)\n- [palera1n-linux-armel](https://cdn.nickchan.lol/palera1n/artifacts/c-rewrite/${{ steps.branch-name.outputs.ref_branch }}/${{ github.run_number }}/binaries/palera1n-linux-armel)\n- [palera1n-linux-x86](https://cdn.nickchan.lol/palera1n/artifacts/c-rewrite/${{ steps.branch-name.outputs.ref_branch }}/${{ github.run_number }}/binaries/palera1n-linux-x86)\n- [palera1n-linux-x86_64](https://cdn.nickchan.lol/palera1n/artifacts/c-rewrite/${{ steps.branch-name.outputs.ref_branch }}/${{ github.run_number }}/binaries/palera1n-linux-x86_64)\n- [palera1n-macos-universal](https://cdn.nickchan.lol/palera1n/artifacts/c-rewrite/${{ steps.branch-name.outputs.ref_branch }}/${{ github.run_number }}/binaries/palera1n-macos-universal)\"}],\"footer\":{\"text\":\"${{ github.actor }}\", \"icon_url\": \"https://github.com/${{ github.actor }}.png\",\"timestamp\":\"$(date -u +"%FT%TZ")\"}}],\"username\":\"GitHub Actions\",\"avatar_url\":\"https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png\"}")
-
-  Accept --cli in CLI only builds for compatibility · palera1n/palera1n@71240fb
+    
