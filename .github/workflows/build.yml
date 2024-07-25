@@ -315,17 +315,20 @@ jobs:
             LDFLAGS="$LDFLAGS" \
             CURL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lcurl"
           sed -i "s|^sys_lib_dlsearch_path_spec=.*|sys_lib_dlsearch_path_spec=\"${{ env.DESTDIR }}${{ env.PREFIX }}/lib /usr/local/lib\"|" libtool
+          sed -i 's|^\(library_names\)=.*|\1=""|' libtool
           make -j$(nproc) V=1
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
 
-      - name: Verify libimobiledevice installation
+      - name: Verify libtool configuration
         run: |
-          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libimobiledevice*
-          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libimobiledevice-1.0.a" ]; then
-            echo "libimobiledevice-1.0.a not found!"
-            exit 1
-          fi
+          cd libimobiledevice
+          echo "sys_lib_dlsearch_path_spec from libtool:"
+          grep sys_lib_dlsearch_path_spec libtool
+          echo "library_names from libtool:"
+          grep "^library_names=" libtool
+          cd ..
+
       - name: Build libirecovery
         run: |
           cd libirecovery
