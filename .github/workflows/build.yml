@@ -19,8 +19,11 @@ jobs:
   build-windows:
     runs-on: windows-latest
 
+    env:
+      CYGWIN_ROOT: C:\cygwin64
+
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -28,22 +31,29 @@ jobs:
       - name: Install Cygwin
         uses: egor-tensin/setup-cygwin@v3
         with:
-          packages: make gcc-core gcc-g++ pkg-config libssl-devel libusb1.0-devel libreadline-devel
+          platform: x64
+          packages: make gcc-core gcc-g++ pkg-config autoconf automake libtool git
+
+      - name: Setup environment
+        run: |
+          echo "${{ env.CYGWIN_ROOT }}/bin" >> $GITHUB_PATH
+          echo "CFLAGS=-g -O2" >> $GITHUB_ENV
+          echo "CXXFLAGS=-g -O2" >> $GITHUB_ENV
+          echo "LDFLAGS=-g" >> $GITHUB_ENV
 
       - name: Build palera1n
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
+        shell: bash
         run: |
-          cd "$GITHUB_WORKSPACE"
+          export PATH="/usr/bin:$PATH"
           make -j$(nproc) ROOTFUL=1
 
       - name: Prepare artifact
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
         run: |
-          mkdir -p ready/binaries
-          cp src/palera1n.exe ready/binaries/palera1n-windows.exe
+          mkdir -p artifacts
+          cp src/palera1n.exe artifacts/palera1n-windows.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: palera1n-windows
-          path: ready/binaries/palera1n-windows.exe
+          path: artifacts/palera1n-windows.exe
