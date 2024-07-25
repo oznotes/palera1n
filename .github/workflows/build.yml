@@ -66,10 +66,12 @@ jobs:
           curl -LO https://github.com/libusb/libusb/releases/download/v${{ env.LIBUSB_VERSION }}/libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
           curl -LO https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz
           curl -LO https://github.com/telmich/gpm/archive/refs/tags/${{ env.GPM_VERSION }}.tar.gz
+          curl -LO https://curl.se/download/curl-7.86.0.tar.gz
           tar -xf v${{ env.MBEDTLS_VERSION }}.tar.gz
           tar -xjf libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
           tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
           tar -xf ${{ env.GPM_VERSION }}.tar.gz
+          tar -xzf curl-7.86.0.tar.gz
           git clone --depth=1 https://github.com/libimobiledevice/libplist
           git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice-glue
           git clone --depth=1 https://github.com/libimobiledevice/libirecovery
@@ -77,8 +79,6 @@ jobs:
           git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice
           git clone --depth=1 https://github.com/libimobiledevice/usbmuxd
           git clone --depth=1 https://github.com/libimobiledevice/libtatsu
-
-
 
       - name: Create CMake toolchain file
         run: |
@@ -202,6 +202,22 @@ jobs:
             echo "libusbmuxd-2.0.la not found!"
             exit 1
           fi
+      - name: Build libcurl
+        run: |
+          cd curl-7.86.0
+          ./configure ${{ env.CONFIGURE_ARGS }} --disable-shared --enable-static --disable-ldap --without-ssl
+          make -j$(nproc)
+          make install DESTDIR=${{ env.DESTDIR }}
+          cd ..
+
+      - name: Verify libcurl installation
+        run: |
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.a
+          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.a" ]; then
+            echo "libcurl.a not found!"
+            exit 1
+          fi
+          
       - name: Build libtatsu
         run: |
           cd libtatsu
