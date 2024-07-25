@@ -33,7 +33,7 @@ jobs:
         run: |
           choco install cygwin -y
           curl -LO https://cygwin.com/setup-x86_64.exe
-          ./setup-x86_64.exe -q -P make,gcc-core,gcc-g++,libssl-devel,autoconf,automake,libtool
+          ./setup-x86_64.exe -q -P make,gcc-core,gcc-g++,libssl-devel,autoconf,automake,libtool,libtoolize
 
       - name: Add Cygwin to PATH
         run: |
