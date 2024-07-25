@@ -34,7 +34,12 @@
 #include <stdlib.h>             // exit, strtoull
 #include <string.h>             // strlen, strerror, memcpy, memmove
 #include <unistd.h>             // close
-#include <sys/mman.h>           // mmap, munmap
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/mman.h>
+#include <unistd.h>
+#endif
 #include <sys/stat.h>           // fstst
 
 #include <palerain.h>
