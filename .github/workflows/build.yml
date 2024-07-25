@@ -343,8 +343,6 @@ jobs:
           sed -i 's|^\(library_names\)=.*|\1=""|' libtool
           sed -i "s|-L/usr/local/lib|-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib|g" libtool
           sed -i "s|/usr/local/lib|${{ env.DESTDIR }}${{ env.PREFIX }}/lib|g" libtool
-          sed -i "s|-L/lib|-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib|g" Makefile
-          sed -i "s|-L/usr/lib|-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib|g" Makefile
           make -j$(nproc) V=1 LDFLAGS="$LDFLAGS" LIBRARY_PATH="$LIBRARY_PATH"
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
