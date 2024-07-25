@@ -314,9 +314,10 @@ jobs:
             LIBCURL_CFLAGS="$LIBCURL_CFLAGS" LIBCURL_LIBS="$LIBCURL_LIBS" \
             LDFLAGS="$LDFLAGS" \
             CURL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lcurl"
-          sed -i "s|^sys_lib_dlsearch_path_spec=.*|sys_lib_dlsearch_path_spec=\"${{ env.DESTDIR }}${{ env.PREFIX }}/lib /usr/local/lib\"|" libtool
+          sed -i "s|^sys_lib_dlsearch_path_spec=.*|sys_lib_dlsearch_path_spec=\"${{ env.DESTDIR }}${{ env.PREFIX }}/lib\"|" libtool
           sed -i 's|^\(library_names\)=.*|\1=""|' libtool
-          make -j$(nproc) V=1
+          sed -i "s|-L/usr/local/lib|-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib|g" libtool
+          make -j$(nproc) V=1 LDFLAGS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
 
