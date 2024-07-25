@@ -393,23 +393,22 @@ jobs:
             ls -la
           fi
           cd ..
-      - name: Locate libatomic
+      - name: Setup libatomic
         run: |
-          find /home/runner/work/palera1n/palera1n/i486-linux-musl-cross -name libatomic.la
-          find /home/runner/work/palera1n/palera1n/i486-linux-musl-cross -name libatomic.a
+          sudo mkdir -p /i486-linux-musl/lib
+          sudo ln -s /home/runner/work/palera1n/palera1n/i486-linux-musl-cross/i486-linux-musl/lib/libatomic.la /i486-linux-musl/lib/libatomic.la
+          sudo ln -s /home/runner/work/palera1n/palera1n/i486-linux-musl-cross/i486-linux-musl/lib/libatomic.a /i486-linux-musl/lib/libatomic.a
 
       - name: Build libirecovery
         run: |
           cd libirecovery
           export PKG_CONFIG_PATH=${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig:$PKG_CONFIG_PATH
           export CFLAGS="$CFLAGS -I${{ env.DESTDIR }}${{ env.PREFIX }}/include/libusb-1.0 -I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
-          export LDFLAGS="$LDFLAGS -L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
+          export LDFLAGS="$LDFLAGS -L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -L/i486-linux-musl/lib"
           export LIBUSB_1_0_CFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include/libusb-1.0"
           export LIBUSB_1_0_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lusb-1.0"
           ./autogen.sh
           ./configure ${{ env.CONFIGURE_ARGS }} --enable-static --disable-shared
-          # Modify libtool to remove libatomic dependency
-          sed -i 's/-latomic//g' libtool
           make -j$(nproc) V=1
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
@@ -438,7 +437,7 @@ jobs:
           echo "Compilation and linking commands:"
           grep -E "^(gcc|cc|ld|libtool)" build_output.log
           cd ..
-          
+
       - name: Build palera1n
         run: |
           # Check if sysroot directories exist
