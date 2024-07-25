@@ -157,6 +157,7 @@ jobs:
           cp src/.libs/libplist-2.0.la ${{ env.DESTDIR }}/usr/local/lib/
           cp src/.libs/libplist++-2.0.la ${{ env.DESTDIR }}/usr/local/lib/
           cd ..
+
       - name: Verify libplist .la files
         run: |
           ls -l ${{ env.DESTDIR }}/usr/local/lib/libplist-2.0.la
@@ -165,6 +166,7 @@ jobs:
             echo "libplist .la files not found!"
             exit 1
           fi
+
       - name: Build libimobiledevice-glue
         run: |
           cd libimobiledevice-glue
@@ -204,19 +206,24 @@ jobs:
             echo "libusbmuxd-2.0.la not found!"
             exit 1
           fi
+
       - name: Build libcurl
         run: |
           cd curl-7.86.0
           ./configure ${{ env.CONFIGURE_ARGS }} --disable-shared --enable-static --disable-ldap --without-ssl
           make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
+          # Ensure .la file is in the correct location
+          if [ -f "lib/.libs/libcurl.la" ]; then
+            cp lib/.libs/libcurl.la ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/
+          fi
           cd ..
 
       - name: Verify libcurl installation
         run: |
-          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.a
-          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.a" ]; then
-            echo "libcurl.a not found!"
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.*
+          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.a" ] || [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.la" ]; then
+            echo "libcurl files not found!"
             exit 1
           fi
 
@@ -259,7 +266,6 @@ jobs:
             --openssldir=${{ env.PREFIX }}/openssl \
             CC=$CC AR=$AR RANLIB=$RANLIB
           sed -i 's/CROSS_COMPILE=.*/CROSS_COMPILE=/' Makefile
-          cat Makefile | grep -E "^CC=|^AR=|^RANLIB="
           make -j$(nproc)
           make install_sw DESTDIR=${{ env.DESTDIR }}
           cd ..
@@ -279,20 +285,22 @@ jobs:
           export PKG_CONFIG_PATH=${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig:$PKG_CONFIG_PATH
           export OPENSSL_CFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
           export OPENSSL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lssl -lcrypto"
+          export LIBCURL_CFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
+          export LIBCURL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lcurl"
           ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython --enable-static --disable-shared
+          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython --enable-static --disable-shared \
+            LIBCURL_CFLAGS="$LIBCURL_CFLAGS" LIBCURL_LIBS="$LIBCURL_LIBS"
           make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
 
-      - name: Verify libimobiledevice .la file
+      - name: Verify libimobiledevice installation
         run: |
-          ls -l ${{ env.DESTDIR }}/usr/local/lib/libimobiledevice-1.0.la
-          if [ ! -f "${{ env.DESTDIR }}/usr/local/lib/libimobiledevice-1.0.la" ]; then
-            echo "libimobiledevice-1.0.la not found!"
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libimobiledevice*
+          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libimobiledevice-1.0.a" ]; then
+            echo "libimobiledevice-1.0.a not found!"
             exit 1
           fi
-
       - name: Build libirecovery
         run: |
           cd libirecovery
