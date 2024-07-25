@@ -300,6 +300,13 @@ jobs:
           done
           ls -l /usr/local/lib/*.la
 
+      - name: Verify library locations
+        run: |
+          echo "Contents of ${{ env.DESTDIR }}${{ env.PREFIX }}/lib:"
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/*.a
+          echo "Contents of /usr/local/lib:"
+          ls -l /usr/local/lib/*.a || echo "No .a files in /usr/local/lib"
+
       - name: Build libimobiledevice
         run: |
           cd libimobiledevice
@@ -328,8 +335,10 @@ jobs:
           grep sys_lib_dlsearch_path_spec libtool
           echo "library_names from libtool:"
           grep "^library_names=" libtool
+          echo "Library paths in libtool:"
+          grep -E "(-L|/lib)" libtool | grep -v "libtool generated"
           cd ..
-
+          
       - name: Build libirecovery
         run: |
           cd libirecovery
