@@ -131,7 +131,7 @@ jobs:
             echo "libusb-1.0.la not found!"
             exit 1
           fi
-          
+
       - name: Build readline
         run: |
           cd readline-${{ env.READLINE_VERSION }}
@@ -148,9 +148,18 @@ jobs:
           make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
           mkdir -p ${{ env.DESTDIR }}/usr/local/lib
-          cp .libs/*.la ${{ env.DESTDIR }}/usr/local/lib/
+          # Copy the .la files from the correct locations
+          cp src/.libs/libplist-2.0.la ${{ env.DESTDIR }}/usr/local/lib/
+          cp src/.libs/libplist++-2.0.la ${{ env.DESTDIR }}/usr/local/lib/
           cd ..
-
+      - name: Verify libplist .la files
+        run: |
+          ls -l ${{ env.DESTDIR }}/usr/local/lib/libplist-2.0.la
+          ls -l ${{ env.DESTDIR }}/usr/local/lib/libplist++-2.0.la
+          if [ ! -f "${{ env.DESTDIR }}/usr/local/lib/libplist-2.0.la" ] || [ ! -f "${{ env.DESTDIR }}/usr/local/lib/libplist++-2.0.la" ]; then
+            echo "libplist .la files not found!"
+            exit 1
+          fi
       - name: Build libimobiledevice-glue
         run: |
           cd libimobiledevice-glue
