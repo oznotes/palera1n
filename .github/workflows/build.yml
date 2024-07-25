@@ -317,13 +317,6 @@ jobs:
           echo "LD_LIBRARY_PATH:"
           echo $LD_LIBRARY_PATH
 
-      - name: Verify Makefile
-        run: |
-          cd libimobiledevice
-          echo "Library paths in Makefile:"
-          grep -E "(-L|/lib)" Makefile
-          cd ..
-
       - name: Build libimobiledevice
         run: |
           cd libimobiledevice
@@ -347,15 +340,28 @@ jobs:
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
 
-      - name: Verify libtool and Makefile
+      - name: Verify Makefile
         run: |
           cd libimobiledevice
-          echo "sys_lib_dlsearch_path_spec from libtool:"
-          grep sys_lib_dlsearch_path_spec libtool
-          echo "Library paths in libtool:"
-          grep -E "(-L|/lib)" libtool | grep -v "libtool generated"
-          echo "Library paths in Makefile:"
-          grep -E "(-L|/lib)" Makefile
+          if [ -f Makefile ]; then
+            echo "Library paths in Makefile:"
+            grep -E "(-L|/lib)" Makefile
+          else
+            echo "Makefile not found. Contents of the directory:"
+            ls -la
+          fi
+          cd ..
+          
+      - name: Check configure output
+        run: |
+          cd libimobiledevice
+          if [ -f config.log ]; then
+            echo "Last 50 lines of config.log:"
+            tail -n 50 config.log
+          else
+            echo "config.log not found. Contents of the directory:"
+            ls -la
+          fi
           cd ..
 
       - name: Build libirecovery
