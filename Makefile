@@ -1,7 +1,7 @@
 SRC = $(shell pwd)
 DEP = $(SRC)/dep_root
 STRIP = strip
-CC ?= cc
+CC ?= gcc  # Default to gcc if CC is not set
 CFLAGS += -isystem $(DEP)/include -I$(SRC)/include -I$(SRC) -D_XOPEN_SOURCE=500
 CFLAGS += -Wall -Wextra -Wno-unused-parameter -DPALERAIN_VERSION=\"2.0\" -DHAVE_LIBIMOBILEDEVICE
 CFLAGS += -Wno-unused-variable -I$(SRC)/src -std=c99 -pedantic-errors -D_C99_SOURCE -D_POSIX_C_SOURCE=200112L
