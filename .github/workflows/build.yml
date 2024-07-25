@@ -393,6 +393,10 @@ jobs:
             ls -la
           fi
           cd ..
+      - name: Locate libatomic
+        run: |
+          find /home/runner/work/palera1n/palera1n/i486-linux-musl-cross -name libatomic.la
+          find /home/runner/work/palera1n/palera1n/i486-linux-musl-cross -name libatomic.a
 
       - name: Build libirecovery
         run: |
@@ -404,9 +408,21 @@ jobs:
           export LIBUSB_1_0_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lusb-1.0"
           ./autogen.sh
           ./configure ${{ env.CONFIGURE_ARGS }} --enable-static --disable-shared
+          # Modify libtool to remove libatomic dependency
+          sed -i 's/-latomic//g' libtool
           make -j$(nproc) V=1
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
+
+      - name: Verify libtool configuration
+        run: |
+          cd libirecovery
+          echo "Checking libtool for libatomic references:"
+          grep -i "atomic" libtool || echo "No libatomic references found in libtool"
+          echo "Checking Makefile for libatomic references:"
+          grep -i "atomic" Makefile || echo "No libatomic references found in Makefile"
+          cd ..
+
       - name: Check libirecovery build
         run: |
           cd libirecovery
@@ -417,9 +433,12 @@ jobs:
           grep -i "undefined reference" build_output.log || echo "No undefined references found"
           echo "Checking for missing libraries:"
           grep -i "cannot find" build_output.log || echo "No missing libraries found"
-          echo "Compilation commands:"
-          grep -E "^(gcc|cc)" build_output.log
+          echo "Checking for libatomic errors:"
+          grep -i "atomic" build_output.log || echo "No libatomic-related errors found"
+          echo "Compilation and linking commands:"
+          grep -E "^(gcc|cc|ld|libtool)" build_output.log
           cd ..
+          
       - name: Build palera1n
         run: |
           # Check if sysroot directories exist
