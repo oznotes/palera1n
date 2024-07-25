@@ -42,9 +42,10 @@ jobs:
       - name: Install libusbmuxd
         shell: bash
         run: |
-          curl -LO https://libusbmuxd.org/releases/libusbmuxd-2.0.2.tar.bz2
-          tar xjf libusbmuxd-2.0.2.tar.bz2
+          curl -LO https://github.com/libimobiledevice/libusbmuxd/archive/refs/tags/2.0.2.tar.gz
+          tar xzf 2.0.2.tar.gz
           cd libusbmuxd-2.0.2
+          ./autogen.sh
           ./configure --prefix=/usr/local
           make
           make install
