@@ -34,17 +34,14 @@ jobs:
           Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
       - name: Install Cygwin
-        run: |
-          choco install cygwin -y
+        run: choco install cygwin -y
 
       - name: Add Cygwin to PATH
         shell: bash
-        run: echo "##[add-path]C:\\cygwin64\\bin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        run: echo "C:\\tools\\cygwin\\bin" >> $GITHUB_PATH
 
       - name: Install required packages with Cygwin
-        run: |
-          C:\cygwin64\bin\bash -c "apt-cyg install make gcc-core gcc-g++ libssl-devel"
+        run: C:\tools\cygwin\cygwin.bat -c "apt-cyg install make gcc-core gcc-g++ libssl-devel"
 
       - name: Build palera1n
-        run: |
-          C:\cygwin64\bin\bash -c "make all"
+        run: C:\tools\cygwin\cygwin.bat -c "make all"
