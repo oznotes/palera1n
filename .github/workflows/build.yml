@@ -227,6 +227,11 @@ jobs:
             exit 1
           fi
 
+      - name: Check libcurl.la contents
+        run: |
+          echo "Contents of libcurl.la:"
+          cat ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.la
+
       - name: Build libtatsu
         run: |
           cd libtatsu
@@ -287,9 +292,13 @@ jobs:
           export OPENSSL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lssl -lcrypto"
           export LIBCURL_CFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
           export LIBCURL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lcurl"
+          export LDFLAGS="$LDFLAGS -L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
           ./autogen.sh
           ./configure ${{ env.CONFIGURE_ARGS }} --without-cython --enable-static --disable-shared \
-            LIBCURL_CFLAGS="$LIBCURL_CFLAGS" LIBCURL_LIBS="$LIBCURL_LIBS"
+            LIBCURL_CFLAGS="$LIBCURL_CFLAGS" LIBCURL_LIBS="$LIBCURL_LIBS" \
+            LDFLAGS="$LDFLAGS" \
+            CURL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lcurl"
+          sed -i 's|^sys_lib_dlsearch_path_spec=.*|sys_lib_dlsearch_path_spec="${{ env.DESTDIR }}${{ env.PREFIX }}/lib"|' libtool
           make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
