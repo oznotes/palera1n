@@ -44,7 +44,8 @@ jobs:
           ./configure --host=x86_64-w64-mingw32 --prefix=/usr/local/x86_64-w64-mingw32 --disable-shared --enable-static
           make
           sudo make install
-          export PKG_CONFIG_PATH=/usr/local/x86_64-w64-mingw32/lib/pkgconfig:$PKG_CONFIG_PATH
+        env:
+          PKG_CONFIG_PATH: /usr/local/x86_64-w64-mingw32/lib/pkgconfig
 
       - name: Build and install libusbmuxd
         run: |
@@ -55,9 +56,16 @@ jobs:
           ./configure --host=x86_64-w64-mingw32 --prefix=/usr/local/x86_64-w64-mingw32 --disable-shared --enable-static
           make
           sudo make install
-          export PKG_CONFIG_PATH=/usr/local/x86_64-w64-mingw32/lib/pkgconfig:$PKG_CONFIG_PATH
+        env:
+          PKG_CONFIG_PATH: /usr/local/x86_64-w64-mingw32/lib/pkgconfig
+          libplist_CFLAGS: $(pkg-config --cflags libplist-2.0)
+          libplist_LIBS: $(pkg-config --libs libplist-2.0)
 
       - name: Build palera1n
         run: |
           export PATH=/usr/local/x86_64-w64-mingw32/bin:$PATH
           make CC=x86_64-w64-mingw32-gcc
+        env:
+          PKG_CONFIG_PATH: /usr/local/x86_64-w64-mingw32/lib/pkgconfig
+          libplist_CFLAGS: $(pkg-config --cflags libplist-2.0)
+          libplist_LIBS: $(pkg-config --libs libplist-2.0)
