@@ -256,7 +256,9 @@ jobs:
           export RANLIB=i486-linux-musl-ranlib
           ./Configure linux-generic32 no-shared no-asm \
             --prefix=${{ env.PREFIX }} \
-            --openssldir=${{ env.PREFIX }}/openssl
+            --openssldir=${{ env.PREFIX }}/openssl \
+            CC=$CC AR=$AR RANLIB=$RANLIB
+          sed -i 's/CROSS_COMPILE=.*/CROSS_COMPILE=/' Makefile
           make -j$(nproc)
           make install_sw DESTDIR=${{ env.DESTDIR }}
           cd ..
