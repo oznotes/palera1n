@@ -47,11 +47,18 @@ jobs:
         env:
           PKG_CONFIG_PATH: /usr/local/x86_64-w64-mingw32/lib/pkgconfig
 
-      - name: Build and install libusbmuxd
+      - name: Patch and build libusbmuxd
         run: |
           curl -LO https://github.com/libimobiledevice/libusbmuxd/archive/refs/tags/2.0.2.tar.gz
           tar xzf 2.0.2.tar.gz
           cd libusbmuxd-2.0.2
+
+          # Patch source files for Windows compatibility
+          sed -i 's/AI_NUMERICSERV/0/g' src/socket.c
+          sed -i 's/freeifaddrs/if_freenameindex/g' src/socket.c
+          sed -i '/#include <sys\/socket.h>/a #include <ws2tcpip.h>' src/socket.c
+          sed -i '/#include <sys\/socket.h>/a #include <winsock2.h>' src/socket.c
+
           ./autogen.sh
           ./configure --host=x86_64-w64-mingw32 --prefix=/usr/local/x86_64-w64-mingw32 --disable-shared --enable-static
           make
