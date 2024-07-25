@@ -319,6 +319,7 @@ jobs:
           export LIBCURL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lcurl"
           export LDFLAGS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
           export CPPFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
+          export LIBRARY_PATH=${{ env.DESTDIR }}${{ env.PREFIX }}/lib
           ./autogen.sh
           ./configure ${{ env.CONFIGURE_ARGS }} --without-cython --enable-static --disable-shared \
             LIBCURL_CFLAGS="$LIBCURL_CFLAGS" LIBCURL_LIBS="$LIBCURL_LIBS" \
@@ -327,7 +328,9 @@ jobs:
           sed -i 's|^\(library_names\)=.*|\1=""|' libtool
           sed -i "s|-L/usr/local/lib|-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib|g" libtool
           sed -i "s|/usr/local/lib|${{ env.DESTDIR }}${{ env.PREFIX }}/lib|g" libtool
-          make -j$(nproc) V=1 LDFLAGS="$LDFLAGS"
+          sed -i "s|-L/lib|-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib|g" Makefile
+          sed -i "s|-L/usr/lib|-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib|g" Makefile
+          make -j$(nproc) V=1 LDFLAGS="$LDFLAGS" LIBRARY_PATH="$LIBRARY_PATH"
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
 
