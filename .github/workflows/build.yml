@@ -290,6 +290,12 @@ jobs:
             echo "OpenSSL libraries not found!"
             exit 1
           fi
+      - name: Create symlinks in /usr/local/lib
+        run: |
+          sudo mkdir -p /usr/local/lib
+          for lib in ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/*.a; do
+            sudo ln -sf $lib /usr/local/lib/$(basename $lib)
+          done
 
       - name: Set up library symlinks
         run: |
@@ -306,8 +312,17 @@ jobs:
           ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/*.a
           echo "Contents of /usr/local/lib:"
           ls -l /usr/local/lib/*.a || echo "No .a files in /usr/local/lib"
+          echo "LIBRARY_PATH:"
+          echo $LIBRARY_PATH
           echo "LD_LIBRARY_PATH:"
           echo $LD_LIBRARY_PATH
+
+      - name: Verify Makefile
+        run: |
+          cd libimobiledevice
+          echo "Library paths in Makefile:"
+          grep -E "(-L|/lib)" Makefile
+          cd ..
 
       - name: Build libimobiledevice
         run: |
