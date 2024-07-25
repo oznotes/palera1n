@@ -306,6 +306,8 @@ jobs:
           ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/*.a
           echo "Contents of /usr/local/lib:"
           ls -l /usr/local/lib/*.a || echo "No .a files in /usr/local/lib"
+          echo "LD_LIBRARY_PATH:"
+          echo $LD_LIBRARY_PATH
 
       - name: Build libimobiledevice
         run: |
@@ -329,15 +331,15 @@ jobs:
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
 
-      - name: Verify libtool configuration
+      - name: Verify libtool and Makefile
         run: |
           cd libimobiledevice
           echo "sys_lib_dlsearch_path_spec from libtool:"
           grep sys_lib_dlsearch_path_spec libtool
-          echo "library_names from libtool:"
-          grep "^library_names=" libtool
           echo "Library paths in libtool:"
           grep -E "(-L|/lib)" libtool | grep -v "libtool generated"
+          echo "Library paths in Makefile:"
+          grep -E "(-L|/lib)" Makefile
           cd ..
 
       - name: Build libirecovery
