@@ -231,6 +231,14 @@ jobs:
           echo "Contents of libcurl.la:"
           cat ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.la
 
+      - name: Verify libcurl symlink and .la files
+        run: |
+          ls -l /usr/local/lib/libcurl.la
+          echo "Contents of /usr/local/lib/libcurl.la:"
+          cat /usr/local/lib/libcurl.la
+          echo "Contents of ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.la:"
+          cat ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.la
+
       - name: Build libtatsu
         run: |
           cd libtatsu
@@ -297,8 +305,7 @@ jobs:
             LIBCURL_CFLAGS="$LIBCURL_CFLAGS" LIBCURL_LIBS="$LIBCURL_LIBS" \
             LDFLAGS="$LDFLAGS" \
             CURL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lcurl"
-          sed -i "s|^sys_lib_dlsearch_path_spec=.*|sys_lib_dlsearch_path_spec=\"${{ env.DESTDIR }}${{ env.PREFIX }}/lib\"|" libtool
-          sed -i "s|/usr/local/lib/libcurl.la|${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.la|g" libtool
+          sed -i "s|^sys_lib_dlsearch_path_spec=.*|sys_lib_dlsearch_path_spec=\"${{ env.DESTDIR }}${{ env.PREFIX }}/lib /usr/local/lib\"|" libtool
           make -j$(nproc) V=1
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
