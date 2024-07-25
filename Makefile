@@ -2,9 +2,20 @@ SRC = $(shell pwd)
 DEP = $(SRC)/dep_root
 STRIP = strip
 CC ?= gcc  # Default to gcc if CC is not set
+# Set CFLAGS
 CFLAGS += -isystem $(DEP)/include -I$(SRC)/include -I$(SRC) -D_XOPEN_SOURCE=500
 CFLAGS += -Wall -Wextra -Wno-unused-parameter -DPALERAIN_VERSION=\"2.0\" -DHAVE_LIBIMOBILEDEVICE
 CFLAGS += -Wno-unused-variable -I$(SRC)/src -std=c99 -pedantic-errors -D_C99_SOURCE -D_POSIX_C_SOURCE=200112L
+CFLAGS += -Os -g
+
+# Platform-specific settings
+ifeq ($(OS),Windows_NT)
+    CFLAGS += -DWIN32
+    LIBS += -lssl -lcrypto
+else
+    CFLAGS += -fdata-sections -ffunction-sections
+    LDFLAGS += -Wl,--gc-sections
+endif
 LIBS += $(DEP)/lib/libimobiledevice-1.0.a $(DEP)/lib/libirecovery-1.0.a $(DEP)/lib/libusbmuxd-2.0.a
 LIBS += $(DEP)/lib/libimobiledevice-glue-1.0.a $(DEP)/lib/libplist-2.0.a -pthread -lm
 ifeq ($(TARGET_OS),)
