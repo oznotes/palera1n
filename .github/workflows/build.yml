@@ -315,16 +315,17 @@ jobs:
           export OPENSSL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lssl -lcrypto"
           export LIBCURL_CFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
           export LIBCURL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lcurl"
-          export LDFLAGS="$LDFLAGS -L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
+          export LDFLAGS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
+          export CPPFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
           ./autogen.sh
           ./configure ${{ env.CONFIGURE_ARGS }} --without-cython --enable-static --disable-shared \
             LIBCURL_CFLAGS="$LIBCURL_CFLAGS" LIBCURL_LIBS="$LIBCURL_LIBS" \
-            LDFLAGS="$LDFLAGS" \
-            CURL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lcurl"
+            LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS"
           sed -i "s|^sys_lib_dlsearch_path_spec=.*|sys_lib_dlsearch_path_spec=\"${{ env.DESTDIR }}${{ env.PREFIX }}/lib\"|" libtool
           sed -i 's|^\(library_names\)=.*|\1=""|' libtool
           sed -i "s|-L/usr/local/lib|-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib|g" libtool
-          make -j$(nproc) V=1 LDFLAGS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
+          sed -i "s|/usr/local/lib|${{ env.DESTDIR }}${{ env.PREFIX }}/lib|g" libtool
+          make -j$(nproc) V=1 LDFLAGS="$LDFLAGS"
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
 
@@ -338,7 +339,7 @@ jobs:
           echo "Library paths in libtool:"
           grep -E "(-L|/lib)" libtool | grep -v "libtool generated"
           cd ..
-          
+
       - name: Build libirecovery
         run: |
           cd libirecovery
