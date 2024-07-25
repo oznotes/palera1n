@@ -217,17 +217,20 @@ jobs:
             echo "libcurl.a not found!"
             exit 1
           fi
-          
+
       - name: Build libtatsu
         run: |
           cd libtatsu
+          export PKG_CONFIG_PATH=${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig:$PKG_CONFIG_PATH
+          export CURL_CFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
+          export CURL_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lcurl"
           ./autogen.sh
           ./configure ${{ env.CONFIGURE_ARGS }} --enable-static --disable-shared
           make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
           mkdir -p ${{ env.DESTDIR }}/usr/local/lib
-          # Copy the .la file from the correct location (adjust if necessary)
-          cp src/.libs/libtatsu-1.0.la ${{ env.DESTDIR }}/usr/local/lib/
+          # Find and copy the .la file
+          find . -name "libtatsu-1.0.la" -exec cp {} ${{ env.DESTDIR }}/usr/local/lib/ \;
           cd ..
 
       - name: Verify libtatsu .la file
@@ -235,6 +238,7 @@ jobs:
           ls -l ${{ env.DESTDIR }}/usr/local/lib/libtatsu-1.0.la
           if [ ! -f "${{ env.DESTDIR }}/usr/local/lib/libtatsu-1.0.la" ]; then
             echo "libtatsu-1.0.la not found!"
+            find ${{ env.DESTDIR }} -name "libtatsu-1.0.la"
             exit 1
           fi
 
