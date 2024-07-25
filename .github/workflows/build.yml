@@ -38,6 +38,7 @@ jobs:
 
       - name: Install build dependencies
         run: |
+          sudo apt-get update
           sudo apt-get remove -y libssl-dev libreadline-dev
           sudo apt-get install -y pkg-config autoconf automake autopoint mandoc
           sudo pip3 install jsonschema jinja2
@@ -59,17 +60,115 @@ jobs:
           echo "CONFIGURE_ARGS=--build=x86_64-linux-gnu --host=i486-linux-musl --prefix=/usr/local --disable-shared --enable-static" >> $GITHUB_ENV
           echo "CROSS_COMPILE=i486-linux-musl-" >> $GITHUB_ENV
 
-      - name: Build dependencies
+      - name: Download dependencies
         run: |
-          # Add steps to build mbedtls, libusb, readline, etc.
-          # This part is lengthy and depends on your specific needs
+          curl -LO https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v${{ env.MBEDTLS_VERSION }}.tar.gz
+          curl -LO https://github.com/libusb/libusb/releases/download/v${{ env.LIBUSB_VERSION }}/libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
+          curl -LO https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz
+          curl -LO https://github.com/telmich/gpm/archive/refs/tags/${{ env.GPM_VERSION }}.tar.gz
+          tar -xf v${{ env.MBEDTLS_VERSION }}.tar.gz
+          tar -xjf libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
+          tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
+          tar -xf ${{ env.GPM_VERSION }}.tar.gz
+          git clone --depth=1 https://github.com/libimobiledevice/libplist
+          git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice-glue
+          git clone --depth=1 https://github.com/libimobiledevice/libirecovery
+          git clone --depth=1 https://github.com/libimobiledevice/libusbmuxd
+          git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice
+          git clone --depth=1 https://github.com/libimobiledevice/usbmuxd
+
+      - name: Build Mbed TLS
+        run: |
+          cd mbedtls-${{ env.MBEDTLS_VERSION }}
+          mkdir build && cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../../cmake/i486-linux-musl.cmake -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }} -DENABLE_PROGRAMS=OFF -DENABLE_TESTING=OFF
+          make -j$(nproc)
+          make install DESTDIR=${{ env.DESTDIR }}
+          cd ../..
+
+      - name: Build libusb
+        run: |
+          cd libusb-${{ env.LIBUSB_VERSION }}
+          ./configure ${{ env.CONFIGURE_ARGS }} --disable-udev
+          make -j$(nproc)
+          make install DESTDIR=${{ env.DESTDIR }}
+          cd ..
+
+      - name: Build readline
+        run: |
+          cd readline-${{ env.READLINE_VERSION }}
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          make -j$(nproc)
+          make install DESTDIR=${{ env.DESTDIR }}
+          cd ..
+
+      - name: Build libplist
+        run: |
+          cd libplist
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython
+          make -j$(nproc)
+          make install DESTDIR=${{ env.DESTDIR }}
+          cd ..
+
+      - name: Build libimobiledevice-glue
+        run: |
+          cd libimobiledevice-glue
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          make -j$(nproc)
+          make install DESTDIR=${{ env.DESTDIR }}
+          cd ..
+
+      - name: Build libirecovery
+        run: |
+          cd libirecovery
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          make -j$(nproc)
+          make install DESTDIR=${{ env.DESTDIR }}
+          cd ..
+
+      - name: Build libusbmuxd
+        run: |
+          cd libusbmuxd
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          make -j$(nproc)
+          make install DESTDIR=${{ env.DESTDIR }}
+          cd ..
+
+      - name: Build libimobiledevice
+        run: |
+          cd libimobiledevice
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --with-mbedtls
+          make -j$(nproc)
+          make install DESTDIR=${{ env.DESTDIR }}
+          cd ..
 
       - name: Build palera1n
         run: |
-          cp -a ${{ env.DESTDIR }}/${{ env.PREFIX }}/{include,lib} dep_root
+          # Check if sysroot directories exist
+          if [ ! -d "${{ env.DESTDIR }}${{ env.PREFIX }}/include" ] || [ ! -d "${{ env.DESTDIR }}${{ env.PREFIX }}/lib" ]; then
+            echo "Error: Sysroot directories don't exist. Dependencies may not have been built correctly."
+            exit 1
+          fi
+
+          # Create dep_root directory
+          mkdir -p dep_root
+
+          # Copy include and lib directories
+          cp -a ${{ env.DESTDIR }}${{ env.PREFIX }}/{include,lib} dep_root
+
+          # Remove unnecessary files
           find dep_root -name '*.so' -delete
           find dep_root -name '*.la' -delete
+
+          # Build palera1n
           CC="${{ env.CROSS_COMPILE }}gcc" make -j$(nproc) ROOTFUL=1
+
+          # Copy the built binary
           cp src/palera1n palera1n-linux-x86
 
       - name: Upload artifact
