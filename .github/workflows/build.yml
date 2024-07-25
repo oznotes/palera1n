@@ -153,12 +153,14 @@ jobs:
       - name: Build libirecovery
         run: |
           cd libirecovery
+          export PKG_CONFIG_PATH=${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig:$PKG_CONFIG_PATH
+          export CFLAGS="$CFLAGS -I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
+          export LDFLAGS="$LDFLAGS -L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
           ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }}
+          ./configure ${{ env.CONFIGURE_ARGS }} --with-libusb
           make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
-
       - name: Build libusbmuxd
         run: |
           cd libusbmuxd
