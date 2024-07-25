@@ -291,6 +291,15 @@ jobs:
             exit 1
           fi
 
+      - name: Set up library symlinks
+        run: |
+          sudo mkdir -p /usr/local/lib
+          for lib in libcurl libplist-2.0 libusbmuxd-2.0 libimobiledevice-glue-1.0; do
+            sudo ln -sf ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/${lib}.la /usr/local/lib/${lib}.la
+            echo "Created symlink for ${lib}.la"
+          done
+          ls -l /usr/local/lib/*.la
+
       - name: Build libimobiledevice
         run: |
           cd libimobiledevice
