@@ -39,9 +39,17 @@ jobs:
         run: |
           echo "C:\\tools\\cygwin\\bin" >> $GITHUB_PATH
 
+      - name: Install libusbmuxd
+        shell: bash
+        run: |
+          wget https://libusbmuxd.org/releases/libusbmuxd-2.0.2.tar.bz2
+          tar xjf libusbmuxd-2.0.2.tar.bz2
+          cd libusbmuxd-2.0.2
+          ./configure --prefix=/usr/local
+          make
+          make install
+
       - name: Build palera1n
         shell: bash
-        env:
-          CC: gcc
         run: |
           make all
