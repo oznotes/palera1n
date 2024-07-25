@@ -76,6 +76,9 @@ jobs:
           git clone --depth=1 https://github.com/libimobiledevice/libusbmuxd
           git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice
           git clone --depth=1 https://github.com/libimobiledevice/usbmuxd
+          git clone --depth=1 https://github.com/fxsheep/libtatsu
+
+
 
       - name: Create CMake toolchain file
         run: |
@@ -199,10 +202,30 @@ jobs:
             echo "libusbmuxd-2.0.la not found!"
             exit 1
           fi
+      - name: Build libtatsu
+        run: |
+          cd libtatsu
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --enable-static --disable-shared
+          make -j$(nproc)
+          make install DESTDIR=${{ env.DESTDIR }}
+          mkdir -p ${{ env.DESTDIR }}/usr/local/lib
+          # Copy the .la file from the correct location (adjust if necessary)
+          cp src/.libs/libtatsu-1.0.la ${{ env.DESTDIR }}/usr/local/lib/
+          cd ..
+
+      - name: Verify libtatsu .la file
+        run: |
+          ls -l ${{ env.DESTDIR }}/usr/local/lib/libtatsu-1.0.la
+          if [ ! -f "${{ env.DESTDIR }}/usr/local/lib/libtatsu-1.0.la" ]; then
+            echo "libtatsu-1.0.la not found!"
+            exit 1
+          fi
 
       - name: Build libimobiledevice
         run: |
           cd libimobiledevice
+          export PKG_CONFIG_PATH=${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig:$PKG_CONFIG_PATH
           ./autogen.sh
           ./configure ${{ env.CONFIGURE_ARGS }} --with-mbedtls --enable-static --disable-shared
           make -j$(nproc)
