@@ -22,27 +22,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-windows:
+  build:
     runs-on: windows-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Install Chocolatey
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
       - name: Install Cygwin
         run: |
-          choco install cygwin --params "/InstallDir:C:\\cygwin64"
-          echo "::add-path::C:\\cygwin64\\bin"
+          choco install cygwin -y
+          refreshenv
 
-      - name: Install Cygwin packages
+      - name: Add Cygwin to PATH
+        shell: bash
+        run: echo "##[add-path]C:\\cygwin64\\bin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install required packages with Cygwin
         run: |
-          C:\\cygwin64\\setup-x86_64.exe -q -P make,gcc-core,gcc-g++,libssl-devel
+          C:\cygwin64\bin\bash -c "apt-cyg install make gcc-core gcc-g++ libssl-devel"
 
       - name: Build palera1n
         run: |
-          C:\\cygwin64\\bin\\bash -c "make -j$(nproc)"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: palera1n-windows
-          path: ./src/palera1n
+          C:\cygwin64\bin\bash -c "make all"
