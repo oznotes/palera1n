@@ -29,15 +29,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Cygwin with required packages
+      - name: Install Cygwin and required packages
         run: |
           choco install cygwin -y
           curl -LO https://cygwin.com/setup-x86_64.exe
-          ./setup-x86_64.exe -q -P make,gcc-core,gcc-g++,libssl-devel,autoconf,automake,libtool,libtoolize
+          ./setup-x86_64.exe -q -P make,gcc-core,gcc-g++,libssl-devel,autoconf,automake,libtool
 
       - name: Add Cygwin to PATH
         run: |
           echo "C:\\tools\\cygwin\\bin" >> $GITHUB_PATH
+          echo "C:\\tools\\cygwin\\usr\\local\\bin" >> $GITHUB_PATH
+          echo "C:\\tools\\cygwin\\usr\\bin" >> $GITHUB_PATH
 
       - name: Install libusbmuxd
         shell: bash
@@ -45,6 +47,7 @@ jobs:
           curl -LO https://github.com/libimobiledevice/libusbmuxd/archive/refs/tags/2.0.2.tar.gz
           tar xzf 2.0.2.tar.gz
           cd libusbmuxd-2.0.2
+          export PATH=/usr/local/bin:$PATH
           ./autogen.sh
           ./configure --prefix=/usr/local
           make
