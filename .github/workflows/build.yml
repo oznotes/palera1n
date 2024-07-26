@@ -23,49 +23,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config autoconf automake libtool libssl-dev libusb-1.0-0-dev libreadline-dev libcurl4-openssl-dev libusbmuxd-dev libimobiledevice-dev git python3-dev
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-      - name: Build and install libplist
+      - name: Build palera1n in Docker
         run: |
-          git clone https://github.com/libimobiledevice/libplist.git
-          cd libplist
-          ./autogen.sh
-          ./configure
-          make
-          sudo make install
-          sudo ldconfig
-          cd ..
-
-      - name: Build and install libimobiledevice-glue
-        run: |
-          git clone https://github.com/libimobiledevice/libimobiledevice-glue.git
-          cd libimobiledevice-glue
-          ./autogen.sh
-          ./configure
-          make
-          sudo make install
-          sudo ldconfig
-          cd ..
-
-      - name: Build and install libirecovery
-        run: |
-          git clone https://github.com/libimobiledevice/libirecovery.git
-          cd libirecovery
-          ./autogen.sh
-          ./configure
-          make
-          sudo make install
-          sudo ldconfig
-          cd ..
-
-      - name: Build palera1n
-        run: |
-          export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-          make -j$(nproc) CFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/lib"
+          docker build -t palera1n-builder -f- . <<EOF
+          FROM ubuntu:20.04
+          ENV DEBIAN_FRONTEND=noninteractive
+          RUN apt-get update && apt-get install -y build-essential git libssl-dev libusb-1.0-0-dev libcurl4-openssl-dev libreadline-dev pkg-config autoconf automake libtool libimobiledevice-dev libusbmuxd-dev libplist-dev
+          WORKDIR /palera1n
+          COPY . .
+          RUN make -j$(nproc)
+          EOF
+          docker create --name palera1n-container palera1n-builder
+          docker cp palera1n-container:/palera1n/palera1n ./palera1n
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
