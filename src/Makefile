@@ -142,7 +142,7 @@ ifneq (,$(findstring version-min=, $(CFLAGS)))
 endif
 endif
 else
-	cp $(RESOURCES_DIR)/checkra1n-$(CHECKRA1N_NAME) $(RESOURCES_DIR)/checkra1n
+	cp $(RESOURCES_DIR)/checkra1n-$(or $(CHECKRA1N_NAME),linux-x86) $(RESOURCES_DIR)/checkra1n
 endif
 
 $(GENDIR)/gen-%.c: $(RESOURCES_DIR)/%
