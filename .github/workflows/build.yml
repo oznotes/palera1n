@@ -246,6 +246,13 @@ jobs:
           make install_sw DESTDIR=${{ env.DESTDIR }}
           cd ..
 
+      - name: Debug OpenSSL
+        run: |
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libssl*
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcrypto*
+          nm ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libssl.a | grep -i bio_free
+          nm ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcrypto.a | grep -i x509_new
+
       - name: Create symlinks in /usr/local/lib
         run: |
           sudo mkdir -p /usr/local/lib
