@@ -241,14 +241,7 @@ jobs:
       - name: Build OpenSSL
         run: |
           cd openssl-1.1.1k
-          export CC=i486-linux-musl-gcc
-          export AR=i486-linux-musl-ar
-          export RANLIB=i486-linux-musl-ranlib
-          ./Configure linux-generic32 no-shared no-asm \
-            --prefix=${{ env.PREFIX }} \
-            --openssldir=${{ env.PREFIX }}/openssl \
-            CC=$CC AR=$AR RANLIB=$RANLIB
-          sed -i 's/CROSS_COMPILE=.*/CROSS_COMPILE=/' Makefile
+          ./Configure linux-generic32 no-shared --prefix=${{ env.PREFIX }} --openssldir=${{ env.PREFIX }}/openssl
           make -j$(nproc)
           make install_sw DESTDIR=${{ env.DESTDIR }}
           cd ..
@@ -284,14 +277,12 @@ jobs:
         run: |
           cd libimobiledevice
           export PKG_CONFIG_PATH=${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig:$PKG_CONFIG_PATH
-          export CFLAGS="$CFLAGS -I${{ env.DESTDIR }}${{ env.PREFIX }}/include/ncurses"
+          export CFLAGS="$CFLAGS -I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
           export LDFLAGS="$LDFLAGS -L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
-          export LIBS="-lncurses"
+          export LIBS="-lssl -lcrypto"
           ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython --enable-static --disable-shared \
-            LIBCURL_CFLAGS="$LIBCURL_CFLAGS" LIBCURL_LIBS="$LIBCURL_LIBS" \
-            LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS" LIBS="$LIBS"
-          make -j$(nproc) V=1
+          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython --enable-static --disable-shared
+          make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
 

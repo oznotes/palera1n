@@ -160,7 +160,7 @@ $(OBJDIR)/%.c.o: %.c $(wildcard ../include/*.h)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 palera1n: $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o palera1n
+    $(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ -L$(DESTDIR)$(PREFIX)/lib -lssl -lcrypto $(LIBS)
 ifeq (,$(findstring macosx, $(CFLAGS)))
 ifneq (,$(findstring version-min=, $(CFLAGS)))
 	$(LDID) -Susb.xml palera1n
