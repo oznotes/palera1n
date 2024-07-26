@@ -102,6 +102,35 @@ jobs:
           set(CMAKE_CXX_FLAGS "${CXXFLAGS}")
           EOF
 
+      - name: Set compiler
+        run: |
+          export CC=i486-linux-musl-gcc
+          export CXX=i486-linux-musl-g++
+          echo "CC=$CC"
+          echo "CXX=$CXX"
+          $CC --version
+          
+      - name: Test compiler
+        run: |
+          echo '#include <stdio.h>
+          int main() { printf("Hello, World!\n"); return 0; }' > test.c
+          $CC test.c -o test
+          file test
+          
+      - name: Check build tools
+        run: |
+          which make
+          which autoconf
+          which automake
+          which libtool
+          
+      - name: Set flags
+        run: |
+          export CFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
+          export LDFLAGS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
+          echo "CFLAGS=$CFLAGS"
+          echo "LDFLAGS=$LDFLAGS"
+          
       - name: Build ncurses
         run: |
           cd ncurses-6.2
