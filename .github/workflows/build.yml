@@ -28,6 +28,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential pkg-config autoconf automake libtool libssl-dev libusb-1.0-0-dev libreadline-dev libcurl4-openssl-dev libplist-dev libusbmuxd-dev libimobiledevice-dev git
 
+      - name: Build and install libimobiledevice-glue
+        run: |
+          git clone https://github.com/libimobiledevice/libimobiledevice-glue.git
+          cd libimobiledevice-glue
+          ./autogen.sh
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+          cd ..
+
       - name: Build and install libirecovery
         run: |
           git clone https://github.com/libimobiledevice/libirecovery.git
