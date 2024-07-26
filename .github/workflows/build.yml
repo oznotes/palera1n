@@ -406,22 +406,20 @@ jobs:
           grep -i "atomic" Makefile || echo "No libatomic references found in Makefile"
           cd ..
 
-      - name: Check libirecovery build
+      - name: Build libirecovery
         run: |
           cd libirecovery
-          make V=1 2>&1 | tee build_output.log
-          echo "Checking for header not found errors:"
-          grep -i "fatal error" build_output.log || echo "No header not found errors"
-          echo "Checking for undefined references:"
-          grep -i "undefined reference" build_output.log || echo "No undefined references found"
-          echo "Checking for missing libraries:"
-          grep -i "cannot find" build_output.log || echo "No missing libraries found"
-          echo "Checking for libatomic errors:"
-          grep -i "atomic" build_output.log || echo "No libatomic-related errors found"
-          echo "Compilation and linking commands:"
-          grep -E "^(gcc|cc|ld|libtool)" build_output.log
-          cd ..
-
+          export PKG_CONFIG_PATH=${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig:$PKG_CONFIG_PATH
+          export CFLAGS="$CFLAGS -I${{ env.DESTDIR }}${{ env.PREFIX }}/include/libusb-1.0 -I${{ env.DESTDIR }}${{ env.PREFIX }}/include -I${{ env.DESTDIR }}${{ env.PREFIX }}/include/ncurses"
+          export LDFLAGS="$LDFLAGS -L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -L/home/runner/work/palera1n/palera1n/i486-linux-musl-cross/i486-linux-musl/lib"
+          export LIBS="/home/runner/work/palera1n/palera1n/i486-linux-musl-cross/i486-linux-musl/lib/libatomic.a -lncurses"
+          export LIBUSB_1_0_CFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include/libusb-1.0"
+          export LIBUSB_1_0_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lusb-1.0"
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --enable-static --disable-shared
+          make -j$(nproc) V=1 LDFLAGS="$LDFLAGS -static" LIBS="$LIBS"
+          make install DESTDIR=${{ env.DESTDIR }}
+          
       - name: Build palera1n
         run: |
           # Check if sysroot directories exist
