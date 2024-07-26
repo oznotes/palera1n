@@ -110,20 +110,31 @@ jobs:
           echo "CXX=$CXX"
           $CC --version
           
-      - name: Test compiler
+      - name: Create and view test file
         run: |
           echo '#include <stdio.h>' > test.c
           echo 'int main() { printf("Hello, World!\n"); return 0; }' >> test.c
-          $CC test.c -o test
-          file test
+          cat test.c
 
-      - name: Check compiler
+      - name: Check compiler settings
         run: |
-          echo $CC
-          which $CC
-          $CC --version
+          echo "CC=${CC}"
+          echo "CROSS_COMPILE=${CROSS_COMPILE}"
+          which ${CROSS_COMPILE}gcc || echo "${CROSS_COMPILE}gcc not found"
           
-          
+      - name: Compile test
+        run: |
+          /home/runner/work/palera1n/palera1n/i486-linux-musl-cross/bin/i486-linux-musl-gcc test.c -o test
+          file test         
+
+      - name: Check directory structure
+        run: |
+          ls -l /home/runner/work/palera1n/palera1n/i486-linux-musl-cross/bin/
+          echo "PATH=$PATH"
+
+      - name: Verbose compile
+        run: |
+          /home/runner/work/palera1n/palera1n/i486-linux-musl-cross/bin/i486-linux-musl-gcc -v test.c -o test
 
       - name: Check build tools
         run: |
