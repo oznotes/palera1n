@@ -404,27 +404,53 @@ jobs:
           find ${{ env.DESTDIR }} -name "libatomic*"
           find /i486-linux-musl -name "libatomic*"
 
+      - name: Check for existing libatomic
+        run: |
+          find /home/runner/work/palera1n/palera1n/i486-linux-musl-cross -name "libatomic*"
+
+      - name: Create atomic_ops.c
+        run: |
+          cat << EOF > atomic_ops.c
+          #include <stdint.h>
+          
+          int __atomic_fetch_add_4(volatile void *ptr, int val, int memorder) {
+              int old = *(volatile int *)ptr;
+              *(volatile int *)ptr = old + val;
+              return old;
+          }
+          
+          int __atomic_fetch_sub_4(volatile void *ptr, int val, int memorder) {
+              int old = *(volatile int *)ptr;
+              *(volatile int *)ptr = old - val;
+              return old;
+          }
+          
+          int __atomic_exchange_4(volatile void *ptr, int *val, int memorder) {
+              int old = *(volatile int *)ptr;
+              *(volatile int *)ptr = *val;
+              return old;
+          }
+          EOF
+
       - name: Build libatomic
         run: |
-          cd i486-linux-musl-cross/lib/gcc/i486-linux-musl/11.2.1/
-          ${{ env.CROSS_COMPILE }}gcc -c ${{ env.CFLAGS }} -DIN_LIBGCC2 -fexceptions -fvisibility=hidden -DHAVE_CC_TLS ../../../../../src/gcc-11.2.0/libgcc/libgcc2.c
-          ${{ env.CROSS_COMPILE }}ar rcs libatomic.a libgcc2.o
+          ${{ env.CROSS_COMPILE }}gcc -c -g -fPIC ${{ env.CFLAGS }} atomic_ops.c
+          ${{ env.CROSS_COMPILE }}ar rcs libatomic.a atomic_ops.o
           cp libatomic.a ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/
 
-      - name: Debug libatomic issue
+      - name: Verify libatomic
         run: |
-          echo "LIBRARY_PATH=$LIBRARY_PATH"
-          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
-          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
-          ls -R ${{ env.DESTDIR }}${{ env.PREFIX }}/lib
-          ${{ env.CROSS_COMPILE }}gcc -print-file-name=libatomic.so
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libatomic.a
+          ${{ env.CROSS_COMPILE }}nm ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libatomic.a
           
+        
       - name: Build libirecovery
         run: |
           cd libirecovery
           export PKG_CONFIG_PATH=${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig:$PKG_CONFIG_PATH
           export CFLAGS="$CFLAGS -I${{ env.DESTDIR }}${{ env.PREFIX }}/include/libusb-1.0 -I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
           export LDFLAGS="$LDFLAGS -L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -static"
+          export LIBS="-latomic"
           export LIBUSB_1_0_CFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include/libusb-1.0"
           export LIBUSB_1_0_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lusb-1.0"
           ./autogen.sh
