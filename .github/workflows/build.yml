@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libimobiledevice-dev libusbmuxd-dev libplist-dev libssl-dev libusb-1.0-0-dev libtool-bin build-essential git autoconf automake libtool pkg-config checkinstall
+          sudo apt-get install -y libimobiledevice-dev libusbmuxd-dev libplist-dev libssl-dev libusb-1.0-0-dev libtool-bin build-essential git autoconf automake libtool pkg-config checkinstall libcurl4-openssl-dev
 
       - name: Build and install libplist
         run: |
