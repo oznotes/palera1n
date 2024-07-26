@@ -135,13 +135,6 @@ jobs:
       - name: Verbose compile
         run: |
           /home/runner/work/palera1n/palera1n/i486-linux-musl-cross/bin/i486-linux-musl-gcc -v test.c -o test
-
-      - name: Check build tools
-        run: |
-          which make
-          which autoconf
-          which automake
-          which libtool
           
       - name: Set flags
         run: |
