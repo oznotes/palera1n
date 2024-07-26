@@ -451,20 +451,19 @@ jobs:
           sudo ln -s /home/runner/work/palera1n/palera1n/i486-linux-musl-cross/i486-linux-musl/lib/libatomic.so /i486-linux-musl/lib/libatomic.so
           
 
-      - name: Build libirecovery
+      - name: Build libirecovery with static libatomic
         run: |
           cd libirecovery
           export PKG_CONFIG_PATH=${{ env.DESTDIR }}${{ env.PREFIX }}/lib/pkgconfig:$PKG_CONFIG_PATH
           export CFLAGS="$CFLAGS -I${{ env.DESTDIR }}${{ env.PREFIX }}/include/libusb-1.0 -I${{ env.DESTDIR }}${{ env.PREFIX }}/include"
           export LDFLAGS="$LDFLAGS -L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -L/home/runner/work/palera1n/palera1n/i486-linux-musl-cross/i486-linux-musl/lib"
-          export LIBS="-latomic"
+          export LIBS="/home/runner/work/palera1n/palera1n/i486-linux-musl-cross/i486-linux-musl/lib/libatomic.a"
           export LIBUSB_1_0_CFLAGS="-I${{ env.DESTDIR }}${{ env.PREFIX }}/include/libusb-1.0"
           export LIBUSB_1_0_LIBS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib -lusb-1.0"
           ./autogen.sh
           ./configure ${{ env.CONFIGURE_ARGS }} --enable-static --disable-shared
           make -j$(nproc) V=1 LDFLAGS="$LDFLAGS -static"
           make install DESTDIR=${{ env.DESTDIR }}
-          
 
       - name: Verify libtool configuration
         run: |
