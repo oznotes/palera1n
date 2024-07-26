@@ -61,6 +61,17 @@ jobs:
           sudo ldconfig
           cd ..
 
+      - name: Build and install libtatsu
+        run: |
+          git clone https://github.com/libimobiledevice/libtatsu.git
+          cd libtatsu
+          ./autogen.sh
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+          cd ..
+
       - name: Build and install libimobiledevice
         run: |
           git clone https://github.com/libimobiledevice/libimobiledevice.git
