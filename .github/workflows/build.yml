@@ -39,6 +39,17 @@ jobs:
           sudo ldconfig
           cd ..
 
+      - name: Build and install libplist
+        run: |
+          git clone https://github.com/libimobiledevice/libplist.git
+          cd libplist
+          ./autogen.sh
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+          cd ..
+
       - name: Build and install libirecovery
         run: |
           git clone https://github.com/libimobiledevice/libirecovery.git
