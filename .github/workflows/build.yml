@@ -26,9 +26,12 @@ jobs:
       - name: Build palera1n
         run: |
           docker run --rm -v ${{ github.workspace }}:/palera1n -w /palera1n \
-            0xacab.org:4567/jbbgameich/docker-images/build-essential:bookworm \
+            debian:bullseye \
             /bin/bash -c "apt-get update && \
-                          apt-get install -y libimobiledevice-dev libusbmuxd-dev libplist-dev && \
+                          apt-get install -y make gcc libssl-dev libusb-1.0-0-dev \
+                                             libcurl4-openssl-dev libreadline-dev \
+                                             pkg-config autoconf automake libtool \
+                                             libimobiledevice-dev libusbmuxd-dev libplist-dev && \
                           make -j$(nproc)"
 
       - name: Upload artifact
