@@ -100,7 +100,7 @@ jobs:
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
           export CFLAGS="-I/usr/local/include $CFLAGS"
           export LDFLAGS="-L/usr/local/lib $LDFLAGS"
-          make -j$(nproc)
+          make -j$(nproc) CFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/lib"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
