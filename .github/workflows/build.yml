@@ -26,7 +26,18 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config autoconf automake libtool libssl-dev libusb-1.0-0-dev libreadline-dev libcurl4-openssl-dev libplist-dev libusbmuxd-dev libimobiledevice-dev git
+          sudo apt-get install -y build-essential pkg-config autoconf automake libtool libssl-dev libusb-1.0-0-dev libreadline-dev libcurl4-openssl-dev libusbmuxd-dev libimobiledevice-dev git python3-dev
+
+      - name: Build and install libplist
+        run: |
+          git clone https://github.com/libimobiledevice/libplist.git
+          cd libplist
+          ./autogen.sh
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+          cd ..
 
       - name: Build and install libimobiledevice-glue
         run: |
