@@ -442,8 +442,15 @@ jobs:
         run: |
           ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libatomic.a
           ${{ env.CROSS_COMPILE }}nm ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libatomic.a
+
+
+
+      - name: Create symbolic link for libatomic.so
+        run: |
+          sudo mkdir -p /i486-linux-musl/lib
+          sudo ln -s /home/runner/work/palera1n/palera1n/i486-linux-musl-cross/i486-linux-musl/lib/libatomic.so /i486-linux-musl/lib/libatomic.so
           
-        
+          
       - name: Build libirecovery
         run: |
           cd libirecovery
