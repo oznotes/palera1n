@@ -48,9 +48,12 @@ usb_ret_t USBBulkUpload(usb_device_handle_t handle, void *data, int len);
 #else
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wpedantic"
+#ifdef __APPLE__
 #include <IOKit/IOKitLib.h>
 #include <IOKit/usb/IOUSBLib.h>
 #include <IOKit/IOCFPlugIn.h>
+#endif
+
 #pragma clang diagnostic pop
 
 #define USB_RET_SUCCESS         KERN_SUCCESS
