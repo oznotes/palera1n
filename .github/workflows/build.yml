@@ -31,7 +31,8 @@ jobs:
                           apt-get install -y make gcc libssl-dev libusb-1.0-0-dev \
                                              libcurl4-openssl-dev libreadline-dev \
                                              pkg-config autoconf automake libtool \
-                                             libimobiledevice-dev libusbmuxd-dev libplist-dev && \
+                                             libimobiledevice-dev libusbmuxd-dev libplist-dev \
+                                             curl git && \
                           make -j$(nproc)"
 
       - name: Upload artifact
