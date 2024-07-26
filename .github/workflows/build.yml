@@ -23,43 +23,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build palera1n in Docker
+      - name: Build palera1n
         run: |
-          docker build -t palera1n-builder -f- . <<EOF
-          FROM ubuntu:20.04
-          ENV DEBIAN_FRONTEND=noninteractive
-          RUN apt-get update && apt-get install -y build-essential git libssl-dev libusb-1.0-0-dev libcurl4-openssl-dev libreadline-dev pkg-config autoconf automake libtool python3-dev curl
-
-          # Build and install dependencies
-          RUN /bin/bash -c 'set -x; build_and_install() { \
-              echo "Building $1..." && \
-              if ! git clone "https://github.com/libimobiledevice/$1.git"; then \
-                echo "Failed to clone $1"; \
-                return 1; \
-              fi && \
-              cd "$1" && \
-              ./autogen.sh && \
-              ./configure && \
-              make && \
-              make install && \
-              ldconfig && \
-              cd .. || { echo "Error building $1"; [ -f config.log ] && cat config.log; return 1; } \
-          }; \
-          build_and_install libplist && \
-          build_and_install libusbmuxd && \
-          build_and_install libimobiledevice-glue && \
-          build_and_install libimobiledevice && \
-          build_and_install libirecovery'
-
-          WORKDIR /palera1n
-          COPY . .
-          RUN PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH make -j$(nproc) || { echo "Build failed. Makefile contents:"; cat Makefile; exit 1; }
-          EOF
-          docker create --name palera1n-container palera1n-builder
-          docker cp palera1n-container:/palera1n/palera1n ./palera1n || { echo "Failed to copy palera1n binary. Container logs:"; docker logs palera1n-container; exit 1; }
+          docker run --rm -v ${{ github.workspace }}:/palera1n -w /palera1n \
+            0xacab.org:4567/jbbgameich/docker-images/build-essential:bookworm \
+            /bin/bash -c "apt-get update && \
+                          apt-get install -y libimobiledevice-dev libusbmuxd-dev libplist-dev && \
+                          make -j$(nproc)"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
