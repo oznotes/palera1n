@@ -34,13 +34,13 @@ jobs:
           RUN apt-get update && apt-get install -y build-essential git libssl-dev libusb-1.0-0-dev libcurl4-openssl-dev libreadline-dev pkg-config autoconf automake libtool python3-dev curl
 
           # Build and install dependencies
-          RUN /bin/bash -c 'build_and_install() { \
+          RUN /bin/bash -c 'set -x; build_and_install() { \
               echo "Building $1..." && \
-              if ! git clone https://github.com/libimobiledevice/$1.git; then \
+              if ! git clone "https://github.com/libimobiledevice/$1.git"; then \
                 echo "Failed to clone $1"; \
                 return 1; \
               fi && \
-              cd $1 && \
+              cd "$1" && \
               ./autogen.sh && \
               ./configure && \
               make && \
