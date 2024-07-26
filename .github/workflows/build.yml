@@ -26,10 +26,26 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libimobiledevice-dev libusbmuxd-dev libplist-dev libssl-dev libusb-1.0-0-dev
+          sudo apt-get install -y libimobiledevice-dev libusbmuxd-dev libplist-dev libssl-dev libusb-1.0-0-dev build-essential git autoconf automake libtool pkg-config
+
+      - name: Build and install libirecovery
+        run: |
+          git clone https://github.com/libimobiledevice/libirecovery.git
+          cd libirecovery
+          ./autogen.sh
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+          cd ..
 
       - name: Build palera1n
-        run: make -j$(nproc)
+        run: |
+          export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+          export CFLAGS="-I/usr/local/include $CFLAGS"
+          export LDFLAGS="-L/usr/local/lib $LDFLAGS"
+          make -j$(nproc)
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
