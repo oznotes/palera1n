@@ -94,13 +94,17 @@ jobs:
           sudo ldconfig
           cd ..
 
+      - name: Fix macro definition in credits.c
+        run: |
+          sed -i 's/#define B "#\\n# palera1n: " BUILD_TAG " \\n#\\n"/#define B "#\\n# palera1n: " BUILD_TAG " \\n#\\n"/' src/credits.c
+
       - name: Build palera1n
         run: |
           export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-          export CFLAGS="-I/usr/local/include $CFLAGS"
+          export CFLAGS="-I/usr/local/include -Isrc/include $CFLAGS"
           export LDFLAGS="-L/usr/local/lib $LDFLAGS"
-          make -j$(nproc) CFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/lib"
+          make -j$(nproc) CFLAGS="-I/usr/local/include -Isrc/include" LDFLAGS="-L/usr/local/lib"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
