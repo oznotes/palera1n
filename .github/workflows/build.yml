@@ -23,17 +23,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Build palera1n
+      - name: Install dependencies
         run: |
-          docker run --rm -v ${{ github.workspace }}:/palera1n -w /palera1n \
-            debian:bullseye \
-            /bin/bash -c "apt-get update && \
-                          apt-get install -y make gcc libssl-dev libusb-1.0-0-dev \
-                                             libcurl4-openssl-dev libreadline-dev \
-                                             pkg-config autoconf automake libtool \
-                                             libimobiledevice-dev libusbmuxd-dev libplist-dev \
-                                             curl git && \
-                          make -j$(nproc)"
+          sudo apt-get update
+          sudo apt-get install -y libimobiledevice-dev libusbmuxd-dev libplist-dev libssl-dev libusb-1.0-0-dev
+
+      - name: Build palera1n
+        run: make -j$(nproc)
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
