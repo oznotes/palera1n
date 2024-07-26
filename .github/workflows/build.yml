@@ -143,6 +143,18 @@ jobs:
           echo "CFLAGS=$CFLAGS"
           echo "LDFLAGS=$LDFLAGS"
 
+      - name: Install libtool
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtool
+          
+      - name: Verify build tools
+        run: |
+          which make
+          which autoconf
+          which automake
+          which libtool
+          
       - name: Build ncurses
         run: |
           cd ncurses-6.2
