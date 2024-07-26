@@ -36,23 +36,26 @@ jobs:
           # Function to build and install a library with error logging
           RUN echo 'build_and_install() { \
               echo "Building $1..." && \
-              git clone https://github.com/libimobiledevice/$1.git && \
+              if ! git clone https://github.com/libimobiledevice/$1.git; then \
+                echo "Failed to clone $1"; \
+                return 1; \
+              fi && \
               cd $1 && \
               ./autogen.sh && \
               ./configure && \
               make && \
               make install && \
               ldconfig && \
-              cd .. || { echo "Error building $1"; cat config.log; exit 1; } \
+              cd .. || { echo "Error building $1"; [ -f config.log ] && cat config.log; return 1; } \
           }' >> /root/.bashrc
 
           # Build and install dependencies
-          RUN . /root/.bashrc && \
+          RUN /bin/bash -c '. /root/.bashrc && \
               build_and_install libplist && \
               build_and_install libusbmuxd && \
               build_and_install libimobiledevice-glue && \
               build_and_install libimobiledevice && \
-              build_and_install libirecovery
+              build_and_install libirecovery'
 
           WORKDIR /palera1n
           COPY . .
