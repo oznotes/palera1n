@@ -33,8 +33,8 @@ jobs:
           ENV DEBIAN_FRONTEND=noninteractive
           RUN apt-get update && apt-get install -y build-essential git libssl-dev libusb-1.0-0-dev libcurl4-openssl-dev libreadline-dev pkg-config autoconf automake libtool python3-dev curl
 
-          # Function to build and install a library with error logging
-          RUN echo 'build_and_install() { \
+          # Build and install dependencies
+          RUN /bin/bash -c 'build_and_install() { \
               echo "Building $1..." && \
               if ! git clone https://github.com/libimobiledevice/$1.git; then \
                 echo "Failed to clone $1"; \
@@ -47,15 +47,12 @@ jobs:
               make install && \
               ldconfig && \
               cd .. || { echo "Error building $1"; [ -f config.log ] && cat config.log; return 1; } \
-          }' >> /root/.bashrc
-
-          # Build and install dependencies
-          RUN /bin/bash -c '. /root/.bashrc && \
-              build_and_install libplist && \
-              build_and_install libusbmuxd && \
-              build_and_install libimobiledevice-glue && \
-              build_and_install libimobiledevice && \
-              build_and_install libirecovery'
+          }; \
+          build_and_install libplist && \
+          build_and_install libusbmuxd && \
+          build_and_install libimobiledevice-glue && \
+          build_and_install libimobiledevice && \
+          build_and_install libirecovery'
 
           WORKDIR /palera1n
           COPY . .
