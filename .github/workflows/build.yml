@@ -39,11 +39,32 @@ jobs:
           sudo ldconfig
           cd ..
 
-
       - name: Build and install libimobiledevice-glue
         run: |
           git clone https://github.com/libimobiledevice/libimobiledevice-glue.git
           cd libimobiledevice-glue
+          ./autogen.sh
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+          cd ..
+
+      - name: Build and install libusbmuxd
+        run: |
+          git clone https://github.com/libimobiledevice/libusbmuxd.git
+          cd libusbmuxd
+          ./autogen.sh
+          ./configure
+          make
+          sudo make install
+          sudo ldconfig
+          cd ..
+
+      - name: Build and install libimobiledevice
+        run: |
+          git clone https://github.com/libimobiledevice/libimobiledevice.git
+          cd libimobiledevice
           ./autogen.sh
           ./configure
           make
