@@ -142,7 +142,7 @@ ifneq (,$(findstring version-min=, $(CFLAGS)))
 endif
 endif
 else
-	cp $(RESOURCES_DIR)/checkra1n-$(or $(CHECKRA1N_NAME),linux-x86) $(RESOURCES_DIR)/checkra1n
+	cp $(RESOURCES_DIR)/checkra1n-$(CHECKRA1N_NAME) $(RESOURCES_DIR)/checkra1n
 endif
 
 $(GENDIR)/gen-%.c: $(RESOURCES_DIR)/%
@@ -160,7 +160,7 @@ $(OBJDIR)/%.c.o: %.c $(wildcard ../include/*.h)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 palera1n: $(OBJS)
-    $(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ -L$(DESTDIR)$(PREFIX)/lib -lssl -lcrypto $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o palera1n
 ifeq (,$(findstring macosx, $(CFLAGS)))
 ifneq (,$(findstring version-min=, $(CFLAGS)))
 	$(LDID) -Susb.xml palera1n
