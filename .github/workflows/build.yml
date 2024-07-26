@@ -31,7 +31,7 @@ jobs:
           docker build -t palera1n-builder -f- . <<EOF
           FROM ubuntu:20.04
           ENV DEBIAN_FRONTEND=noninteractive
-          RUN apt-get update && apt-get install -y build-essential git libssl-dev libusb-1.0-0-dev libcurl4-openssl-dev libreadline-dev pkg-config autoconf automake libtool libimobiledevice-dev libusbmuxd-dev libplist-dev
+          RUN apt-get update && apt-get install -y build-essential git libssl-dev libusb-1.0-0-dev libcurl4-openssl-dev libreadline-dev pkg-config autoconf automake libtool libimobiledevice-dev libusbmuxd-dev libplist-dev curl
           WORKDIR /palera1n
           COPY . .
           RUN make -j$(nproc)
