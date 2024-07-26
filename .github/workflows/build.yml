@@ -32,9 +32,20 @@ jobs:
           FROM ubuntu:20.04
           ENV DEBIAN_FRONTEND=noninteractive
           RUN apt-get update && apt-get install -y build-essential git libssl-dev libusb-1.0-0-dev libcurl4-openssl-dev libreadline-dev pkg-config autoconf automake libtool libimobiledevice-dev libusbmuxd-dev libplist-dev curl
+          
+          # Build and install libirecovery
+          RUN git clone https://github.com/libimobiledevice/libirecovery.git && \
+              cd libirecovery && \
+              ./autogen.sh && \
+              ./configure && \
+              make && \
+              make install && \
+              ldconfig && \
+              cd ..
+          
           WORKDIR /palera1n
           COPY . .
-          RUN make -j$(nproc)
+          RUN PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH make -j4
           EOF
           docker create --name palera1n-container palera1n-builder
           docker cp palera1n-container:/palera1n/palera1n ./palera1n
