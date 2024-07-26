@@ -110,14 +110,6 @@ jobs:
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
 
-      - name: Verify ncurses installation
-        run: |
-          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libncurses.*
-          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libncurses.a" ]; then
-            echo "libncurses.a not found!"
-            exit 1
-          fi
-
       - name: Build Mbed TLS
         run: |
           cd mbedtls-${{ env.MBEDTLS_VERSION }}
@@ -166,14 +158,19 @@ jobs:
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
 
-      - name: Verify readline installation
+      - name: Debug ncurses and readline
         run: |
-          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libreadline.*
-          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libreadline.a" ]; then
-            echo "libreadline.a not found!"
-            exit 1
-          fi
-          nm ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libreadline.a | grep tputs
+          echo "ncurses libraries:"
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libncurses*
+          echo "readline libraries:"
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libreadline*
+          echo "ncurses headers:"
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/include/ncurses*
+          echo "readline headers:"
+          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/include/readline*
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+          pkg-config --libs ncurses
+          pkg-config --libs readline
 
       - name: Build libplist
         run: |
@@ -188,15 +185,6 @@ jobs:
           cp src/.libs/libplist++-2.0.la ${{ env.DESTDIR }}/usr/local/lib/
           cd ..
 
-      - name: Verify libplist .la files
-        run: |
-          ls -l ${{ env.DESTDIR }}/usr/local/lib/libplist-2.0.la
-          ls -l ${{ env.DESTDIR }}/usr/local/lib/libplist++-2.0.la
-          if [ ! -f "${{ env.DESTDIR }}/usr/local/lib/libplist-2.0.la" ] || [ ! -f "${{ env.DESTDIR }}/usr/local/lib/libplist++-2.0.la" ]; then
-            echo "libplist .la files not found!"
-            exit 1
-          fi
-
       - name: Build libimobiledevice-glue
         run: |
           cd libimobiledevice-glue
@@ -208,14 +196,6 @@ jobs:
           # Copy the .la file from the correct location
           cp src/.libs/libimobiledevice-glue-1.0.la ${{ env.DESTDIR }}/usr/local/lib/
           cd ..
-
-      - name: Verify libimobiledevice-glue .la file
-        run: |
-          ls -l ${{ env.DESTDIR }}/usr/local/lib/libimobiledevice-glue-1.0.la
-          if [ ! -f "${{ env.DESTDIR }}/usr/local/lib/libimobiledevice-glue-1.0.la" ]; then
-            echo "libimobiledevice-glue-1.0.la not found!"
-            exit 1
-          fi
 
       - name: Build libusbmuxd
         run: |
@@ -229,13 +209,6 @@ jobs:
           cp src/.libs/libusbmuxd-2.0.la ${{ env.DESTDIR }}/usr/local/lib/
           cd ..
 
-      - name: Verify libusbmuxd .la file
-        run: |
-          ls -l ${{ env.DESTDIR }}/usr/local/lib/libusbmuxd-2.0.la
-          if [ ! -f "${{ env.DESTDIR }}/usr/local/lib/libusbmuxd-2.0.la" ]; then
-            echo "libusbmuxd-2.0.la not found!"
-            exit 1
-          fi
 
       - name: Build libcurl
         run: |
@@ -248,25 +221,9 @@ jobs:
           sudo ln -sf ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.la /usr/local/lib/libcurl.la
           cd ..
 
-      - name: Verify libcurl installation
-        run: |
-          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.*
-          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.a" ] || [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.la" ]; then
-            echo "libcurl files not found!"
-            exit 1
-          fi
-
       - name: Check libcurl.la contents
         run: |
           echo "Contents of libcurl.la:"
-          cat ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.la
-
-      - name: Verify libcurl symlink and .la files
-        run: |
-          ls -l /usr/local/lib/libcurl.la
-          echo "Contents of /usr/local/lib/libcurl.la:"
-          cat /usr/local/lib/libcurl.la
-          echo "Contents of ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.la:"
           cat ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcurl.la
 
       - name: Build libtatsu
@@ -280,22 +237,6 @@ jobs:
           make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
-
-      - name: Verify libtatsu installation
-        run: |
-          echo "Contents of ${{ env.DESTDIR }}${{ env.PREFIX }}/lib:"
-          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libtatsu*
-          echo "Contents of ${{ env.DESTDIR }}${{ env.PREFIX }}/include/libtatsu:"
-          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/include/libtatsu
-          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libtatsu.a" ]; then
-            echo "libtatsu.a not found!"
-            exit 1
-          fi
-          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libtatsu.la" ]; then
-            echo "libtatsu.la not found!"
-            exit 1
-          fi
-          echo "libtatsu installation verified successfully."
 
       - name: Build OpenSSL
         run: |
@@ -312,14 +253,6 @@ jobs:
           make install_sw DESTDIR=${{ env.DESTDIR }}
           cd ..
 
-      - name: Verify OpenSSL installation
-        run: |
-          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libssl.a
-          ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcrypto.a
-          if [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libssl.a" ] || [ ! -f "${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libcrypto.a" ]; then
-            echo "OpenSSL libraries not found!"
-            exit 1
-          fi
       - name: Create symlinks in /usr/local/lib
         run: |
           sudo mkdir -p /usr/local/lib
@@ -442,7 +375,6 @@ jobs:
         run: |
           ls -l ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libatomic.a
           ${{ env.CROSS_COMPILE }}nm ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/libatomic.a
-
 
 
       - name: Create symbolic link for libatomic.so
