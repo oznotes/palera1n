@@ -130,7 +130,7 @@ jobs:
           export LDFLAGS="-L${{ env.DESTDIR }}${{ env.PREFIX }}/lib"
           echo "CFLAGS=$CFLAGS"
           echo "LDFLAGS=$LDFLAGS"
-          
+
       - name: Build ncurses
         run: |
           cd ncurses-6.2
@@ -309,6 +309,21 @@ jobs:
           echo "LD_LIBRARY_PATH:"
           echo $LD_LIBRARY_PATH
 
+      - name: Reconfigure libimobiledevice
+        run: |
+          cd libimobiledevice
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython --enable-static --disable-shared CC=$CC CXX=$CXX CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS"
+          cd ..
+          
+      - name: Clean and reconfigure
+        run: |
+          cd libimobiledevice
+          git clean -fdx
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython --enable-static --disable-shared CC=$CC CXX=$CXX CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS"
+          cd ..
+          
       - name: Build libimobiledevice
         run: |
           cd libimobiledevice
