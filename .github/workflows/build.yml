@@ -52,6 +52,17 @@ jobs:
             mingw-w64-x86_64-libusb
             git
             make
+            python
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install Python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install jsonschema jinja2
 
       - name: Setup environment
         shell: msys2 {0}
@@ -66,9 +77,20 @@ jobs:
           echo "PREFIX=/mingw64" >> $GITHUB_ENV
           echo "CONFIGURE_ARGS=--prefix=/mingw64 --disable-shared --enable-static" >> $GITHUB_ENV
 
-      - name: Download dependencies (source code)
+      - name: Cache dependencies
+        id: cache-deps
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/deps
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/workflow-deps-hash') }}
+
+      - name: Download and build dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
+          mkdir -p ~/deps
+          cd ~/deps
           curl -LO https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v${{ env.MBEDTLS_VERSION }}.tar.gz
           tar -xzf v${{ env.MBEDTLS_VERSION }}.tar.gz
           git clone --depth=1 https://github.com/libimobiledevice/libplist
@@ -77,71 +99,35 @@ jobs:
           git clone --depth=1 https://github.com/libimobiledevice/libusbmuxd
           git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice
 
-      - name: Build Mbed TLS
-        shell: msys2 {0}
-        run: |
+          # Build MbedTLS
           cd mbedtls-${{ env.MBEDTLS_VERSION }}
           mkdir build && cd build
           cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }} -DENABLE_PROGRAMS=OFF -DENABLE_TESTING=OFF
-          ninja
-          ninja install
+          ninja && ninja install
           cd ../..
 
-      - name: Build libplist
-        shell: msys2 {0}
-        run: |
-          cd libplist
-          ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython
-          make -j$(nproc)
-          make install
-          cd ..
-
-      - name: Build libimobiledevice-glue
-        shell: msys2 {0}
-        run: |
-          cd libimobiledevice-glue
-          ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }}
-          make -j$(nproc)
-          make install
-          cd ..
-
-      - name: Build libirecovery
-        shell: msys2 {0}
-        run: |
-          cd libirecovery
-          ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }}
-          make -j$(nproc)
-          make install
-          cd ..
-
-      - name: Build libusbmuxd
-        shell: msys2 {0}
-        run: |
-          cd libusbmuxd
-          ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }}
-          make -j$(nproc)
-          make install
-          cd ..
-
-      - name: Build libimobiledevice
-        shell: msys2 {0}
-        run: |
-          cd libimobiledevice
-          ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --with-mbedtls --disable-debug --disable-wireless-pairing
-          make -j$(nproc)
-          make install
-          cd ..
+          # Build other dependencies
+          for repo in libplist libimobiledevice-glue libirecovery libusbmuxd libimobiledevice; do
+            cd $repo
+            ./autogen.sh
+            ./configure ${{ env.CONFIGURE_ARGS }} $([[ "$repo" == "libimobiledevice" ]] && echo "--with-mbedtls --disable-debug --disable-wireless-pairing")
+            make -j$(nproc)
+            make install
+            cd ..
+          done
 
       - name: Build palera1n
         shell: msys2 {0}
         run: |
           make -j$(nproc) ROOTFUL=1
           cp src/palera1n.exe palera1n.release.exe
+
+      - name: Generate debug symbols
+        shell: msys2 {0}
+        run: |
+          objcopy --only-keep-debug palera1n.release.exe palera1n.debug.exe
+          strip --strip-debug --strip-unneeded palera1n.release.exe
+          objcopy --add-gnu-debuglink=palera1n.debug.exe palera1n.release.exe
 
       - name: Build palera1n (Development)
         shell: msys2 {0}
@@ -153,9 +139,10 @@ jobs:
       - name: Prepare artifact
         shell: msys2 {0}
         run: |
-          mkdir -p ready/{binaries,binaries_development}
+          mkdir -p ready/{binaries,binaries_development,debug_symbols}
           mv palera1n.release.exe ready/binaries/palera1n-${{ env.CHECKRA1N_NAME }}.exe
           mv palera1n.development.exe ready/binaries_development/palera1n-${{ env.CHECKRA1N_NAME }}.development.exe
+          mv palera1n.debug.exe ready/debug_symbols/palera1n-${{ env.CHECKRA1N_NAME }}.debug.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -164,4 +151,5 @@ jobs:
           path: |
             ready/binaries/palera1n-${{ env.CHECKRA1N_NAME }}.exe
             ready/binaries_development/palera1n-${{ env.CHECKRA1N_NAME }}.development.exe
+            ready/debug_symbols/palera1n-${{ env.CHECKRA1N_NAME }}.debug.exe
           retention-days: 90
