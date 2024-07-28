@@ -54,11 +54,17 @@ jobs:
 
       - name: Install build dependencies (packages)
         run: |
-          C:\msys64\usr\bin\bash -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-pkg-config mingw-w64-x86_64-jsoncpp mingw-w64-x86_64-readline mingw-w64-x86_64-zstd mingw-w64-x86_64-mbedtls mingw-w64-x86_64-libusb mingw-w64-x86_64-python cygport"
+          C:\msys64\usr\bin\bash -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-pkg-config mingw-w64-x86_64-jsoncpp mingw-w64-x86_64-readline mingw-w64-x86_64-zstd mingw-w64-x86_64-mbedtls mingw-w64-x86_64-libusb mingw-w64-x86_64-python"
 
       - name: Install autoconf and automake
         run: |
           C:\msys64\usr\bin\bash -lc "pacman -S --noconfirm autoconf automake binutils coreutils gnupg gzip"
+
+
+      - name: Install Cygwin and cygport
+        run: |
+          curl -L -O https://cygwin.com/setup-x86_64.exe
+          ./setup-x86_64.exe -q -P cygport,git,make,gcc-core,libncurses-devel,autoconf,automake,binutils,coreutils,gnupg,gzip,terminfo,terminfo-extra
 
       - name: Setup environment
         run: |
@@ -99,7 +105,7 @@ jobs:
           cd readline
           cygport readline.cygport download all
           "
-          
+
       - name: Build libplist
         run: |
           C:\msys64\usr\bin\bash -lc "
