@@ -108,10 +108,10 @@ jobs:
       - name: Build libplist
         run: |
           C:\msys64\usr\bin\bash -lc "
-          git clone --depth=1 https://github.com/libimobiledevice/libplist
+          git clone https://github.com/libimobiledevice/libplist.git
           cd libplist
           git fetch origin ${{ env.LIBPLIST_COMMIT }} && git reset --hard ${{ env.LIBPLIST_COMMIT }}
-          ./autogen.sh
+          autoreconf -fiv
           ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64
           make -j$(nproc)
           make install
