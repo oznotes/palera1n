@@ -53,22 +53,18 @@ jobs:
           echo 'C:\cygwin64\bin' >> $GITHUB_PATH
           echo 'C:\cygwin64\usr\local\bin' >> $GITHUB_PATH
           echo 'C:\cygwin64\usr\bin' >> $GITHUB_PATH
-          echo 'C:\cygwin64\bin' >> $GITHUB_ENV
-          echo 'C:\cygwin64\usr\local\bin' >> $GITHUB_ENV
-          echo 'C:\cygwin64\usr\bin' >> $GITHUB_ENV
 
-      - name: Verify Cygport Installation
+      - name: Verify Cygwin Installation
         run: |
           echo "Checking Cygwin bin directory contents"
-          ls -la /cygdrive/c/cygwin64/bin
+          dir C:\cygwin64\bin
           echo "Verifying cygport command"
-          which cygport
-          cygport --version
+          C:\cygwin64\bin\cygport --version
         shell: bash
 
       - name: Clone and build readline using Cygport
         run: |
-          C:/cygwin64/bin/bash -lc "
+          C:\cygwin64\bin\bash -lc "
           git clone git://cygwin.com/git/cygwin-packages/readline.git
           cd readline
           cygport readline.cygport download all
@@ -77,3 +73,4 @@ jobs:
           make -j$(nproc)
           make install
           "
+        shell: bash
