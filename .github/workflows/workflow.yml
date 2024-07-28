@@ -56,6 +56,8 @@ jobs:
         run: |
           echo 'export PATH=/cygdrive/c/cygwin64/bin:/cygdrive/c/cygwin64/usr/local/bin:/cygdrive/c/cygwin64/usr/bin:$PATH' >> $GITHUB_ENV
           source $GITHUB_ENV
+          echo "Current PATH: $PATH"
+          which cygport
           cygport --version
 
       - name: Clone and build readline using Cygport
