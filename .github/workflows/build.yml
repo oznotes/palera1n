@@ -94,31 +94,14 @@ jobs:
       - name: Build readline
         run: |
           C:\msys64\usr\bin\bash -lc "
-          curl -LO https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz
-          tar -xf readline-8.2.tar.gz
-          cd readline-8.2
-          
-          # Patch rlprivate.h for missing headers and sigset_t
-          sed -i '1i#include <winsock2.h>' rlprivate.h
-          sed -i '1i#include <ws2tcpip.h>' rlprivate.h
-          sed -i 's/sigset_t/_sigset_t/g' rlprivate.h
-
-          # Patch input.c for missing alarm function and syntax errors
-          sed -i '1i#include <windows.h>' input.c
-          sed -i 's/alarm/NULL/g' input.c
-          sed -i 's/return (_getch ())/return (_getch ());/' input.c
-          sed -i 's/^#include <sys\/types.h>/#include <sys\/types.h>\n#include <winsock2.h>/' input.c
-          sed -i 's/^#include <sys\/time.h>/#include <sys\/time.h>\n#include <windows.h>/' input.c
-
-          # Patch signals.c for missing sigprocmask and SIG_BLOCK
-          sed -i '1i#include <windows.h>' signals.c
-          sed -i 's/sigprocmask(x, y, z)/0/g' signals.c  # Stub out sigprocmask
-          sed -i 's/SIG_BLOCK/0/g' signals.c             # Define SIG_BLOCK as 0
-          sed -i 's/sigset_t/_sigset_t/g' signals.c      # Replace sigset_t with _sigset_t
-          sed -i 's/set/oset/g' signals.c                # Use oset instead of set
+          curl -LO https://ftp.gnu.org/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz
+          tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
+          cd readline-${{ env.READLINE_VERSION }}
           
           export CFLAGS='-I/mingw64/include -I/mingw64/include/w32api -D__USE_MINGW_ANSI_STDIO=1'
           export CPPFLAGS='-I/mingw64/include -I/mingw64/include/w32api -D__USE_MINGW_ANSI_STDIO=1'
+          
+          # Configure and build
           ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-shared --enable-static
           make -j$(nproc)
           make install
