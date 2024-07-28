@@ -54,12 +54,12 @@ jobs:
 
       - name: Install build dependencies (packages)
         run: |
-          C:\msys64\usr\bin\bash -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-pkg-config mingw-w64-x86_64-jsoncpp mingw-w64-x86_64-readline mingw-w64-x86_64-zstd mingw-w64-x86_64-mbedtls mingw-w64-x86_64-libusb mingw-w64-x86_64-python mingw-w64-x86_64-ncurses mingw-w64-x86_64-termcap"
+          C:\msys64\usr\bin\bash -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-pkg-config mingw-w64-x86_64-jsoncpp mingw-w64-x86_64-readline mingw-w64-x86_64-zstd mingw-w64-x86_64-mbedtls mingw-w64-x86_64-libusb mingw-w64-x86_64-python git"
 
       - name: Install autoconf and automake
         run: |
           C:\msys64\usr\bin\bash -lc "pacman -S --noconfirm autoconf automake binutils coreutils gnupg gzip"
-
+      
       - name: Setup environment
         run: |
           echo "CMAKE_PREFIX_PATH=$MSYS2_PATH\mingw64" >> $GITHUB_ENV
