@@ -3,7 +3,7 @@ name: Build palera1n for Linux x64
 on:
   push:
     branches:
-      - main  # or your default branch name
+      - main
     paths:
       - 'src/**'
       - 'include/**'
@@ -11,13 +11,13 @@ on:
       - '.github/workflows/build-linux-x64.yml'
   pull_request:
     branches:
-      - main  # or your default branch name
+      - main
     paths:
       - 'src/**'
       - 'include/**'
       - 'Makefile'
       - '.github/workflows/build-linux-x64.yml'
-  workflow_dispatch:  # This allows manual triggering
+  workflow_dispatch:
 
 jobs:
   build-Linux:
@@ -89,7 +89,10 @@ jobs:
           done
 
           # Fix .la files
-          find ${{ env.DESTDIR }}${{ env.PREFIX }}/lib -name '*.la' -exec sed -i 's|/usr/local/lib|'${{ env.DESTDIR }}'&|g' {} +
+          find ${{ env.DESTDIR }}${{ env.PREFIX }}/lib -name '*.la' -exec sed -i \
+            -e 's|^libdir=.*|libdir='"'${{ env.DESTDIR }}${{ env.PREFIX }}/lib'"'|' \
+            -e 's|^dependency_libs=.*|dependency_libs=|' \
+            -e 's| /usr/local/lib/lib| ${{ env.DESTDIR }}/usr/local/lib/lib|g' {} +
 
       - name: Build palera1n
         run: |
