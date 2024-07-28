@@ -21,7 +21,6 @@ on:
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
-jobs:
   build:
     runs-on: windows-latest
 
@@ -49,6 +48,15 @@ jobs:
           else
             echo "Cygwin bin directory does NOT exist"
             exit 1
+          fi
+        shell: bash
+
+      - name: Create symlink for Cygwin bin if needed
+        run: |
+          if [ ! -d "/cygdrive/c/cygwin64/bin" ]; then
+            echo "Creating symlink for Cygwin bin directory"
+            mkdir -p /cygdrive/c/cygwin64
+            ln -s /cygdrive/c/cygwin64/bin /bin
           fi
         shell: bash
 
