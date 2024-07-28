@@ -58,6 +58,7 @@ jobs:
       - name: Verify Cygport Installation
         run: |
           source $GITHUB_ENV
+          ls -la /cygdrive/c/cygwin64/bin
           which cygport
           cygport --version
         shell: bash
