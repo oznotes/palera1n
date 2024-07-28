@@ -35,6 +35,24 @@ jobs:
           ./setup-x86_64.exe -q -D -R C:\cygwin64 -s http://cygwin.mirror.constant.com/
           ./setup-x86_64.exe -q -L -R C:\cygwin64 -P cygport,git,make,gcc-core,libncurses-devel,autoconf,automake,binutils,coreutils,gnupg,gzip,terminfo,terminfo-extra
 
+      - name: Find Cygwin64 directory
+        run: |
+          echo "Searching for cygwin64 directory..."
+          dir C:\
+          echo "Searching for cygwin64/bin directory..."
+          dir C:\cygwin64
+          dir C:\cygwin64\bin
+
+      - name: Verify Cygwin bin directory exists
+        run: |
+          if [ -d "C:\cygwin64\bin" ]; then
+            echo "Cygwin bin directory exists"
+          else
+            echo "Cygwin bin directory does NOT exist"
+            exit 1
+          fi
+        shell: bash
+
       - name: Setup Cygwin Environment and Verify
         shell: bash
         run: |
