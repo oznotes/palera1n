@@ -67,9 +67,10 @@ jobs:
 
       - name: Setup Cygwin Environment
         run: |
-          echo "C:\cygwin64\bin" >> $GITHUB_PATH
-          echo "C:\cygwin64\usr\local\bin" >> $GITHUB_PATH
-          echo "C:\cygwin64\usr\bin" >> $GITHUB_PATH
+          echo "C:\\cygwin64\\bin" >> $GITHUB_PATH
+          echo "C:\\cygwin64\\usr\\local\\bin" >> $GITHUB_PATH
+          echo "C:\\cygwin64\\usr\\bin" >> $GITHUB_PATH
+
 
       - name: Setup environment
         run: |
