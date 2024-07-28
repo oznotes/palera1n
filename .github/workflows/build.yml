@@ -109,6 +109,13 @@ jobs:
           sed -i 's/return (_getch ())/return (_getch ());/' input.c
           sed -i 's/^#include <sys\/types.h>/#include <sys\/types.h>\n#include <winsock2.h>/' input.c
           sed -i 's/^#include <sys\/time.h>/#include <sys\/time.h>\n#include <windows.h>/' input.c
+
+          # Patch signals.c for missing sigprocmask and SIG_BLOCK
+          sed -i '1i#include <windows.h>' signals.c
+          sed -i 's/sigprocmask(x, y, z)/0/g' signals.c  # Stub out sigprocmask
+          sed -i 's/SIG_BLOCK/0/g' signals.c             # Define SIG_BLOCK as 0
+          sed -i 's/sigset_t/_sigset_t/g' signals.c      # Replace sigset_t with _sigset_t
+          sed -i 's/set/oset/g' signals.c                # Use oset instead of set
           
           export CFLAGS='-I/mingw64/include -I/mingw64/include/w32api -D__USE_MINGW_ANSI_STDIO=1'
           export CPPFLAGS='-I/mingw64/include -I/mingw64/include/w32api -D__USE_MINGW_ANSI_STDIO=1'
@@ -116,8 +123,6 @@ jobs:
           make -j$(nproc)
           make install
           "
-
-
 
       - name: Build libplist
         run: |
