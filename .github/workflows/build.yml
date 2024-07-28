@@ -102,7 +102,17 @@ jobs:
           make install
           "
 
-
+      - name: Build readline
+        run: |
+          C:\cygwin64\bin\bash -lc "
+          git clone git://cygwin.com/git/cygwin-packages/readline.git
+          cd readline
+          cygport readline.cygport download all
+          cd $(cygport readline.cygport dir)
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-shared --enable-static
+          make -j$(nproc)
+          make install
+          "
       - name: Build libplist
         run: |
           C:\msys64\usr\bin\bash -lc "
