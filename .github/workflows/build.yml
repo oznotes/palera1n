@@ -1,33 +1,38 @@
-name: Build palera1n for Linux x64
+name: Build palera1n Linux x64
 
 on:
   push:
-    branches:
-      - main
     paths:
       - 'src/**'
+      - 'docs/**'
+      - 'patches/**'
       - 'include/**'
       - 'Makefile'
-      - '.github/workflows/build-linux-x64.yml'
+      - 'CMakeLists.txt'
+      - '.github/workflows/build.yml'
   pull_request:
-    branches:
-      - main
     paths:
       - 'src/**'
+      - 'docs/**'
+      - 'patches/**'
       - 'include/**'
       - 'Makefile'
-      - '.github/workflows/build-linux-x64.yml'
+      - 'CMakeLists.txt'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
 
 jobs:
-  build-Linux:
+  build-linux-x64:
     runs-on: ubuntu-latest
     env:
       MBEDTLS_VERSION: 3.5.2
       LIBUSB_VERSION: 1.0.27
+      READLINE_VERSION: 8.2
+      GPM_VERSION: 1.20.7
       LIBIMOBILEDEVICE_COMMIT: ed0d66d0341562731bb19928dfe48155509fa7a7
       LIBIRECOVERY_COMMIT: 7ce02c347b7c26e59498e6af31c9da51018d0fa1
       LIBIMOBILEDEVICE_GLUE_COMMIT: 362f7848ac89b74d9dd113b38b51ecb601f76094
+      USBMUXD_COMMIT: bc0b91ca856811f4393318dc83db6dc3c1ac326d
       LIBPLIST_COMMIT: 2117b8fdb6b4096455bd2041a63e59a028120136
       LIBUSBMUXD_COMMIT: a7f0543fb1ecb20ac7121c0fd77297200e0e43fc
 
@@ -37,84 +42,293 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install dependencies
+      - name: Install build dependencies (packages)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential git autoconf automake libtool pkg-config libssl-dev libusb-1.0-0-dev libcurl4-openssl-dev
+          sudo apt-get remove -y libssl-dev libreadline-dev
+          sudo apt-get install -y pkg-config autoconf automake autopoint mandoc
+          sudo pip3 install jsonschema jinja2
+
+      - name: Download toolchain checksum
+        run: |
+          curl -LO https://musl.cc/SHA512SUMS
+          echo "TOOLCHAIN_CHECKSUM=$(grep x86_64-linux-musl-cross.tgz SHA512SUMS | cut -d' ' -f1)" >> $GITHUB_ENV
+
+      - name: Download toolchain (cached)
+        id: toolchain_cache
+        uses: actions/cache@v3
+        with:
+          path: x86_64-linux-musl-cross.tgz
+          key: x86_64-${{ env.TOOLCHAIN_CHECKSUM }}-toolchain
+
+      - name: Download toolchain
+        if: steps.toolchain_cache.outputs.cache-hit != 'true'
+        run: |
+          curl -LO https://musl.cc/x86_64-linux-musl-cross.tgz
 
       - name: Setup environment
         run: |
-          mkdir -p sysroot/usr/local/{lib,include}
+          tar -xf x86_64-linux-musl-cross.tgz
+          mkdir sysroot
+          echo "$(pwd)/x86_64-linux-musl-cross/bin" >> $GITHUB_PATH
+          echo "CHECKRA1N_NAME=linux-x86_64" >> $GITHUB_ENV
+          echo "ARCH_NAME=amd64" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$(pwd)/sysroot/usr/local/lib/pkgconfig" >> $GITHUB_ENV
+          echo "CFLAGS=-g -fdata-sections -ffunction-sections -I$(pwd)/sysroot/usr/local/include -L$(pwd)/sysroot/usr/local/lib -D_FILE_OFFSET_BITS=64 -D_TIME_BITS=64" >> $GITHUB_ENV
+          echo "CXXFLAGS=-g -fdata-sections -ffunction-sections -I$(pwd)/sysroot/usr/local/include -L$(pwd)/sysroot/usr/local/lib -D_FILE_OFFSET_BITS=64 -D_TIME_BITS=64" >> $GITHUB_ENV
+          echo "LDFLAGS=-g -Wl,--gc-sections -fdata-sections -ffunction-sections -I$(pwd)/sysroot/usr/local/include -L$(pwd)/sysroot/usr/local/lib" >> $GITHUB_ENV
+          echo "INSTALL=$(command -v install) --strip-program=x86_64-linux-musl-strip" >> $GITHUB_ENV
           echo "DESTDIR=$(pwd)/sysroot" >> $GITHUB_ENV
           echo "PREFIX=/usr/local" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=$(pwd)/sysroot/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
-          echo "CFLAGS=-I$(pwd)/sysroot/usr/local/include -I$(pwd)/sysroot/usr/local/include/libusb-1.0 -L$(pwd)/sysroot/usr/local/lib" >> $GITHUB_ENV
-          echo "LDFLAGS=-L$(pwd)/sysroot/usr/local/lib" >> $GITHUB_ENV
-          echo "CONFIGURE_ARGS=--prefix=/usr/local --disable-shared --enable-static" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=$(pwd)/sysroot/usr/local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "LIBTOOL_COMMAND=libtool --tag=CC --mode=link gcc -g -O2 -version-info 1:0:0 -no-undefined" >> $GITHUB_ENV
+          echo "CONFIGURE_ARGS=--build=x86_64-linux-gnu --host=x86_64-linux-musl --prefix=/usr/local --disable-shared --enable-static" >> $GITHUB_ENV
+          echo "CROSS_COMPILE=x86_64-linux-musl-" >> $GITHUB_ENV
 
-      - name: Build dependencies
+      - name: Check dependencies cache
         run: |
-          set -ex
-          # Build MbedTLS
-          curl -LO https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v${{ env.MBEDTLS_VERSION }}.tar.gz
+          echo "target: x86_64-linux-musl" > cache.txt
+          echo "mbedtls ${{ env.MBEDTLS_VERSION }}" >> cache.txt
+          echo "readline: ${{ env.READLINE_VERSION }}" >> cache.txt
+          echo "libimobiledevice: ${{ env.LIBIMOBILEDEVICE_COMMIT }}" >> cache.txt
+          echo "libirecovery: ${{ env.LIBIRECOVERY_COMMIT }}" >> cache.txt
+          echo "libimobiledevice-glue: ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }}" >> cache.txt
+          echo "libplist: ${{ env.LIBPLIST_COMMIT }}" >> cache.txt
+          echo "libusbmuxd: ${{ env.LIBUSBMUXD_COMMIT }}" >> cache.txt
+          echo "usbmuxd: ${{ env.USBMUXD_COMMIT }}" >> cache.txt
+          echo "cc: $(${{ env.CROSS_COMPILE }}gcc --version)" >> cache.txt
+          echo "CACHE_TXT_CHECKSUM=sysroot-$(sha512sum cache.txt | cut -d' ' -f1)" >> $GITHUB_ENV
+
+      - name: Download cached sysroot
+        id: sysroot_cache
+        uses: actions/cache@v3
+        with:
+          path: sysroot-${{ env.CACHE_TXT_CHECKSUM }}.txz
+          key: sysroot-${{ env.CACHE_TXT_CHECKSUM }}
+
+      - name: Extract cached sysroot
+        if: steps.sysroot_cache.outputs.cache-hit == 'true'
+        run: |
+          xz -dcT0 sysroot-${{ env.CACHE_TXT_CHECKSUM }}.txz | tar -x
+
+      - name: Setup sysroot
+        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p $(pwd)/sysroot/usr/local/lib
+          ln -sf $(pwd)/sysroot/usr/local/lib{,64}
+
+      - name: Download dependencies (source code)
+        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+        run: |
+          curl -LOOOOO \
+            https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v${{ env.MBEDTLS_VERSION }}.tar.gz \
+            https://github.com/libusb/libusb/releases/download/v${{ env.LIBUSB_VERSION }}/libusb-${{ env.LIBUSB_VERSION }}.tar.bz2 \
+            https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz \
+            https://github.com/telmich/gpm/archive/refs/tags/${{ env.GPM_VERSION }}.tar.gz
+
           tar -xf v${{ env.MBEDTLS_VERSION }}.tar.gz
+          tar -xjf libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
+          tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
+          tar -xf ${{ env.GPM_VERSION }}.tar.gz
+          git clone --depth=1 https://github.com/libimobiledevice/libplist
+          git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice-glue
+          git clone --depth=1 https://github.com/libimobiledevice/libirecovery
+          git clone --depth=1 https://github.com/libimobiledevice/libusbmuxd
+          git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice
+          git clone --depth=1 https://github.com/libimobiledevice/usbmuxd
+          cd libplist && git fetch origin ${{ env.LIBPLIST_COMMIT }} && git reset --hard ${{ env.LIBPLIST_COMMIT }} && cd ..
+          cd libirecovery && git fetch origin ${{ env.LIBIRECOVERY_COMMIT }} && git reset --hard ${{ env.LIBIRECOVERY_COMMIT }} && cd ..
+          cd libimobiledevice-glue && git fetch origin ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }} && git reset --hard ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }} && cd ..
+          cd usbmuxd && git fetch origin ${{ env.USBMUXD_COMMIT }} && git reset --hard ${{ env.USBMUXD_COMMIT }} && cd ..
+          cd libimobiledevice && git fetch origin ${{ env.LIBIMOBILEDEVICE_COMMIT }} && git reset --hard ${{ env.LIBIMOBILEDEVICE_COMMIT }} && cd ..
+          cd libusbmuxd && git fetch origin ${{ env.LIBUSBMUXD_COMMIT }} && git reset --hard ${{ env.LIBUSBMUXD_COMMIT }} && cd ..
+
+      - name: Build Mbed TLS
+        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+        run: |
           cd mbedtls-${{ env.MBEDTLS_VERSION }}
-          cmake -DCMAKE_INSTALL_PREFIX=${{ env.DESTDIR }}${{ env.PREFIX }} -DENABLE_PROGRAMS=OFF -DENABLE_TESTING=OFF -DCMAKE_BUILD_TYPE=Release .
+          cat ../patches/mbedtls/0001-Allow-empty-x509-cert-issuer.patch | patch -sN -d . -p1
+          mkdir build
+          cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CROSSCOMPILING=true \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_PROCESSOR=x86_64 \
+            -DCMAKE_C_COMPILER='${{ env.CROSS_COMPILE }}gcc' \
+            -DCMAKE_C_FLAGS='${{ env.CFLAGS }}'  \
+            -DCMAKE_CXX_FLAGS='${{ env.CXXFLAGS }}' \
+            -DCMAKE_FIND_ROOT_PATH="${{ env.DESTDIR }}" \
+            -DCMAKE_INSTALL_PREFIX="${{ env.PREFIX }}" \
+            -DENABLE_TESTING=OFF \
+            -DENABLE_PROGRAMS=OFF \
+            -DCMAKE_INSTALL_SYSCONFDIR="/etc"
           make -j$(nproc)
-          make install
+          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
           cd ..
 
-          # Build libusb
-          curl -LO https://github.com/libusb/libusb/releases/download/v${{ env.LIBUSB_VERSION }}/libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
-          tar -xjf libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
+      - name: Build libusb
+        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+        run: |
           cd libusb-${{ env.LIBUSB_VERSION }}
           ./configure ${{ env.CONFIGURE_ARGS }} --disable-udev
           make -j$(nproc)
-          make install DESTDIR=${{ env.DESTDIR }}
+          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
           cd ..
 
-          # Build other dependencies (libplist, libimobiledevice-glue, libirecovery, libusbmuxd, libimobiledevice)
-          for repo in libplist libimobiledevice-glue libirecovery libusbmuxd libimobiledevice; do
-            git clone https://github.com/libimobiledevice/$repo.git
-            cd $repo
-            ./autogen.sh
-            ./configure ${{ env.CONFIGURE_ARGS }} \
-              CFLAGS="${{ env.CFLAGS }}" \
-              LDFLAGS="${{ env.LDFLAGS }}" \
-              PKG_CONFIG_PATH="${{ env.PKG_CONFIG_PATH }}"
-            make -j$(nproc)
-            make install DESTDIR=${{ env.DESTDIR }}
-            cd ..
-          done
+      - name: Build readline
+        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+        run: |
+          cd readline-${{ env.READLINE_VERSION }}
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          make -j$(nproc)
+          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
+          cd ..
 
-          # Fix .la files and create symlinks
-          sudo mkdir -p /usr/local/lib
-          find ${{ env.DESTDIR }}${{ env.PREFIX }}/lib -name '*.la' -exec sudo sed -i \
-            -e 's|^libdir=.*|libdir='"'${{ env.DESTDIR }}${{ env.PREFIX }}/lib'"'|' \
-            -e 's|^dependency_libs=.*|dependency_libs=|' \
-            -e 's| /usr/local/lib/lib| ${{ env.DESTDIR }}/usr/local/lib/lib|g' {} +
-          for file in ${{ env.DESTDIR }}${{ env.PREFIX }}/lib/*.la; do
-            sudo ln -sf $file /usr/local/lib/$(basename $file)
-          done
+      - name: Build GPM
+        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+        run: |
+          cd gpm-${{ env.GPM_VERSION }}
+          cat ../patches/gpm/*.patch | patch -sN -d . -p1
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          gmake -j$(nproc)
+          gmake -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
+          cd ..
+
+      - name: Build libplist
+        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+        run: |
+          cd libplist
+          autoreconf -fiv
+          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython
+          make -j$(nproc)
+          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
+          cd ..
+
+      - name: Build libimobiledevice-glue
+        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+        run: |
+          cd libimobiledevice-glue
+          autoreconf -fiv
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          make -j$(nproc)
+          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
+          cd ..
+
+      - name: Build libirecovery (sorta)
+        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+        run: |
+          sudo mv /usr/local /usr/local.bak
+          sudo ln -s ${{ env.DESTDIR }}${{ env.PREFIX }} /usr/local
+          cd libirecovery
+          autoreconf -fiv
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          echo -e 'all:\ninstall:' > tools/Makefile
+          make -ij$(nproc)
+          make -ij$(nproc) install DESTDIR=${{ env.DESTDIR }}
+          install -m644 src/.libs/libirecovery-1.0.a ${{ env.DESTDIR }}${{ env.PREFIX }}/lib
+          cd ..
+
+      - name: Build libusbmuxd
+        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+        run: |
+          cd libusbmuxd
+          autoreconf -fiv
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          make -j$(nproc)
+          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
+          cd ..
+
+      - name: Build libimobiledevice
+        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+        run: |
+          cd libimobiledevice
+          autoreconf -fiv
+          ./configure ${{ env.CONFIGURE_ARGS }} --with-mbedtls --disable-debug --disable-wireless-pairing
+          echo -e 'all:\ninstall:' > tools/Makefile
+          make -j$(nproc)
+          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
+          cd ..
+          sudo rm /usr/local
+          sudo mv /usr/local.bak /usr/local
+
+      - name: Build usbmuxd
+        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+        run: |
+          cd usbmuxd
+          autoreconf -fiv
+          ./configure ${{ env.CONFIGURE_ARGS }} --without-systemd
+          x86_64-linux-musl-gcc ${{ env.CFLAGS }} -I${{ env.DESTDIR }}/${{ env.PREFIX }}/include/libusb-1.0 src/*.c \
+            -DHAVE_CONFIG_H -no-pie \
+            -I. -static ${{ env.LDFLAGS }} -limobiledevice-1.0 -lusbmuxd-2.0 -limobiledevice-glue-1.0  \
+            -lplist-2.0 -lusb-1.0 -lmbedtls -lmbedcrypto -lmbedx509 -lpthread -o usbmuxd
+          mkdir -p ${{ env.DESTDIR }}/${{ env.PREFIX }}/sbin
+          x86_64-linux-musl-objcopy --only-keep-debug usbmuxd usbmuxd.debug
+          x86_64-linux-musl-strip --strip-debug --strip-unneeded usbmuxd
+          x86_64-linux-musl-objcopy --add-gnu-debuglink=usbmuxd.debug usbmuxd
+          install -m755 usbmuxd usbmuxd.debug ${{ env.DESTDIR }}/${{ env.PREFIX }}/sbin
+          cd ..
 
       - name: Build palera1n
         run: |
-          export PKG_CONFIG_PATH=${{ env.PKG_CONFIG_PATH }}
-          export CFLAGS="${{ env.CFLAGS }}"
-          export LDFLAGS="${{ env.LDFLAGS }}"
-          export LD_LIBRARY_PATH="${{ env.LD_LIBRARY_PATH }}"
-          make -j$(nproc) ROOTFUL=1 LIBTOOL="${{ env.LIBTOOL_COMMAND }}"
+          cp -a ${{ env.DESTDIR }}/${{ env.PREFIX }}/{include,lib} dep_root
+          find dep_root -name '*.so' -delete
+          find dep_root -name '*.la' -delete
+          CC="x86_64-linux-musl-gcc" make -j$(nproc) ROOTFUL=1
+          cp src/palera1n palera1n.release
 
-      - name: Verify binary
+      - name: Seperate debug symbols
         run: |
-          file src/palera1n
-          ldd src/palera1n || true
-          LD_LIBRARY_PATH=${{ env.LD_LIBRARY_PATH }} ./src/palera1n --version || true
+          x86_64-linux-musl-objcopy --only-keep-debug palera1n.release palera1n.debug
+          x86_64-linux-musl-strip --strip-debug --strip-unneeded palera1n.release
+          x86_64-linux-musl-objcopy --add-gnu-debuglink=palera1n.debug palera1n.release
+          chmod -x palera1n.debug
+
+      - name: Build palera1n (Development)
+        run: |
+          CC="x86_64-linux-musl-gcc" make -j$(nproc) clean
+          CC="x86_64-linux-musl-gcc" make -j$(nproc) DEV_BUILD=1 ROOTFUL=1
+          cp src/palera1n palera1n.development
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p ready/{binaries,debian,binaries_development,build_depends,debug_symbols} usbmuxd-static
+          mv palera1n.debug ready/debug_symbols/palera1n-${{ env.CHECKRA1N_NAME }}.debug
+          mv palera1n.release ready/binaries/palera1n-${{ env.CHECKRA1N_NAME }}
+          mv palera1n.development ready/binaries_development/palera1n-${{ env.CHECKRA1N_NAME }}.development
+          tar -zcf ready/build_depends/dep_root_x86_64-linux-musl.tgz dep_root
+          install -m755 sysroot/${{ env.PREFIX }}/sbin/usbmuxd usbmuxd-static/usbmuxd-${{ env.CHECKRA1N_NAME }}
+          install -m755 sysroot/${{ env.PREFIX }}/sbin/usbmuxd.debug usbmuxd-static/usbmuxd-${{ env.CHECKRA1N_NAME }}.debug
+
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v7
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: wangyucode/sftp-upload-action@v1.4.8
         with:
-          name: palera1n-linux-x64
-          path: src/palera1n
+          host: ${{ secrets.NICKCHAN_FTP_HOST }}
+          port: ${{ secrets.NICKCHAN_FTP_PORT }}
+          username: palera1n
+          password: ${{ secrets.NICKCHAN_FTP_PASS }}
+          forceUpload: true
+          dryRun: false
+          localDir: 'ready/'
+          remoteDir: "/palera1n/artifacts/c-rewrite/${{ steps.branch-name.outputs.ref_branch || github.ref_name }}/${{ github.run_number }}"
+
+      - name: Upload usbmuxd artifact
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: wangyucode/sftp-upload-action@v1.4.8
+        with:
+          host: ${{ secrets.NICKCHAN_FTP_HOST }}
+          port: ${{ secrets.NICKCHAN_FTP_PORT }}
+          username: palera1n
+          password: ${{ secrets.NICKCHAN_FTP_PASS }}
+          forceUpload: true
+          dryRun: false
+          localDir: 'usbmuxd-static/'
+          remoteDir: "/palera1n/artifacts/usbmuxd-static"
+
+      - name: Generate cached sysroot archive
+        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+        run: |
+          tar -c sysroot | xz -zce9T 0 > sysroot-${{ env.CACHE_TXT_CHECKSUM }}.txz
