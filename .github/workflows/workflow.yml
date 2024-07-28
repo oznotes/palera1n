@@ -58,12 +58,12 @@ jobs:
 
       - name: Verify cygport and git installation
         run: |
-          C:\\cygwin64\\bin\\bash -lc "cygport --version"
-          C:\\cygwin64\\bin\\bash -lc "git --version"
+          C:\cygwin64\bin\bash -lc "cygport --version"
+          C:\cygwin64\bin\bash -lc "git --version"
 
       - name: Build readline
         run: |
-          C:\\cygwin64\\bin\\bash -lc "
+          C:\cygwin64\bin\bash -lc "
           export PATH=/usr/bin:/mingw64/bin:$PATH
           git clone git://cygwin.com/git/cygwin-packages/readline.git
           cd readline
@@ -76,7 +76,7 @@ jobs:
 
       - name: Build other dependencies
         run: |
-          C:\\cygwin64\\bin\\bash -lc "
+          C:\cygwin64\bin\bash -lc "
           git clone https://github.com/libimobiledevice/libplist.git
           cd libplist
           git fetch origin ${{ env.LIBPLIST_COMMIT }} && git reset --hard ${{ env.LIBPLIST_COMMIT }}
