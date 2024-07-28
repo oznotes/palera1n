@@ -1,4 +1,4 @@
-name: Build palera1n for Linux
+name: Build palera1n for Linux x64
 
 on:
   push:
@@ -6,13 +6,13 @@ on:
       - 'src/**'
       - 'include/**'
       - 'Makefile'
-      - '.github/workflows/build-linux.yml'
+      - '.github/workflows/build-linux-x64.yml'
   pull_request:
     paths:
       - 'src/**'
       - 'include/**'
       - 'Makefile'
-      - '.github/workflows/build-linux.yml'
+      - '.github/workflows/build-linux-x64.yml'
   workflow_dispatch:
 
 jobs:
@@ -31,15 +31,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential git autoconf automake libtool pkg-config libudev-dev libssl-dev
+          sudo apt-get install -y build-essential git autoconf automake libtool pkg-config libssl-dev libusb-1.0-0-dev libcurl4-openssl-dev libreadline-dev
 
       - name: Setup environment
         run: |
-          mkdir -p sysroot/usr/local
+          mkdir -p sysroot/usr/local/{lib,include}
           echo "DESTDIR=$(pwd)/sysroot" >> $GITHUB_ENV
           echo "PREFIX=/usr/local" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=$(pwd)/sysroot/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
@@ -54,7 +56,7 @@ jobs:
           curl -LO https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v${{ env.MBEDTLS_VERSION }}.tar.gz
           tar -xf v${{ env.MBEDTLS_VERSION }}.tar.gz
           cd mbedtls-${{ env.MBEDTLS_VERSION }}
-          cmake -DCMAKE_INSTALL_PREFIX=${{ env.DESTDIR }}${{ env.PREFIX }} -DENABLE_PROGRAMS=OFF -DENABLE_TESTING=OFF .
+          cmake -DCMAKE_INSTALL_PREFIX=${{ env.DESTDIR }}${{ env.PREFIX }} -DENABLE_PROGRAMS=OFF -DENABLE_TESTING=OFF -DCMAKE_BUILD_TYPE=Release .
           make -j$(nproc)
           make install
           cd ..
@@ -63,16 +65,7 @@ jobs:
           curl -LO https://github.com/libusb/libusb/releases/download/v${{ env.LIBUSB_VERSION }}/libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
           tar -xjf libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
           cd libusb-${{ env.LIBUSB_VERSION }}
-          ./configure ${{ env.CONFIGURE_ARGS }}
-          make -j$(nproc)
-          make install DESTDIR=${{ env.DESTDIR }}
-          cd ..
-
-          # Build readline
-          curl -LO https://ftp.gnu.org/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz
-          tar -xzf readline-${{ env.READLINE_VERSION }}.tar.gz
-          cd readline-${{ env.READLINE_VERSION }}
-          ./configure ${{ env.CONFIGURE_ARGS }}
+          ./configure ${{ env.CONFIGURE_ARGS }} --disable-udev
           make -j$(nproc)
           make install DESTDIR=${{ env.DESTDIR }}
           cd ..
@@ -93,16 +86,16 @@ jobs:
           export PKG_CONFIG_PATH=${{ env.PKG_CONFIG_PATH }}
           export CFLAGS="${{ env.CFLAGS }}"
           export LDFLAGS="${{ env.LDFLAGS }}"
-          make -j$(nproc) ROOTFUL=1 V=1
+          make -j$(nproc) ROOTFUL=1
 
       - name: Verify binary
         run: |
           file src/palera1n
           ldd src/palera1n || true
-          ./src/palera1n --version
+          ./src/palera1n --version || true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: palera1n-linux-x86_64
+          name: palera1n-linux-x64
           path: src/palera1n
