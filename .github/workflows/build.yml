@@ -98,9 +98,15 @@ jobs:
           tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
           cd readline-${{ env.READLINE_VERSION }}
           
-          # Patch rlprivate.h
+          # Patch rlprivate.h for missing headers and sigset_t
           sed -i '1i#include <winsock2.h>' rlprivate.h
+          sed -i '1i#include <ws2tcpip.h>' rlprivate.h
           sed -i 's/sigset_t/_sigset_t/g' rlprivate.h
+
+          # Patch input.c for missing alarm function and syntax errors
+          sed -i '1i#include <windows.h>' input.c
+          sed -i 's/alarm/NULL/g' input.c
+          sed -i 's/return (_getch ())/return (_getch ());/' input.c
           
           export CFLAGS='-I/mingw64/include -I/mingw64/include/w32api -D__USE_MINGW_ANSI_STDIO=1'
           export CPPFLAGS='-I/mingw64/include -I/mingw64/include/w32api -D__USE_MINGW_ANSI_STDIO=1'
@@ -108,6 +114,7 @@ jobs:
           make -j$(nproc)
           make install
           "
+
 
       - name: Build libplist
         run: |
