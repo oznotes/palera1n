@@ -91,7 +91,18 @@ jobs:
           make install
           "
 
-
+      - name: Build readline from Cygwin repository
+        run: |
+          C:\msys64\usr\bin\bash -lc "
+          git clone git://cygwin.com/git/cygwin-packages/readline.git
+          cd readline
+          ./autogen.sh
+          export CFLAGS='-I/mingw64/include -I/mingw64/include/w32api -D__USE_MINGW_ANSI_STDIO=1'
+          export CPPFLAGS='-I/mingw64/include -I/mingw64/include/w32api -D__USE_MINGW_ANSI_STDIO=1'
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-shared --enable-static
+          make -j$(nproc)
+          make install
+          "
 
       - name: Build libplist
         run: |
