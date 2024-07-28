@@ -60,7 +60,7 @@ jobs:
         run: |
           C:\msys64\usr\bin\bash -lc "pacman -S --noconfirm autoconf automake binutils coreutils gnupg gzip"
 
-      - name: Install Cygwin and cygport
+      - name: Install Cygwin and necessary packages
         run: |
           curl -L -O https://cygwin.com/setup-x86_64.exe
           ./setup-x86_64.exe -q -P cygport,git,make,gcc-core,libncurses-devel,autoconf,automake,binutils,coreutils,gnupg,gzip,terminfo,terminfo-extra
@@ -71,8 +71,12 @@ jobs:
           echo "C:\\cygwin64\\usr\\local\\bin" >> $GITHUB_PATH
           echo "C:\\cygwin64\\usr\\bin" >> $GITHUB_PATH
 
-      - name: Verify cygport installation
-        run: C:\\cygwin64\\bin\\bash -lc "cygport --version"
+
+      - name: Verify cygport and git installation
+        run: |
+          C:\\cygwin64\\bin\\bash -lc "cygport --version"
+          C:\\cygwin64\\bin\\bash -lc "git --version"
+
 
 
       - name: Setup environment
@@ -109,14 +113,16 @@ jobs:
       - name: Build readline
         run: |
           C:\\cygwin64\\bin\\bash -lc "
+          export PATH=/usr/bin:/mingw64/bin:$PATH
           git clone git://cygwin.com/git/cygwin-packages/readline.git
           cd readline
           cygport readline.cygport download all
-          cd $(cygport readline.cygport dir)
+          cd \$(cygport readline.cygport dir)
           ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-shared --enable-static
-          make -j$(nproc)
+          make -j\$(nproc)
           make install
           "
+
 
       - name: Build libplist
         run: |
