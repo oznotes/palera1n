@@ -46,11 +46,11 @@ jobs:
           fetch-depth: 0
 
       - name: Install MSYS2
-        run: |
-          Invoke-WebRequest -Uri https://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-${{ env.MSYS2_VERSION }}.tar.xz -OutFile msys2-base-x86_64.tar.xz
-          tar -xf msys2-base-x86_64.tar.xz -C C:\
-          C:\msys64\usr\bin\bash -lc "pacman -Syuu --noconfirm"
-          C:\msys64\usr\bin\bash -lc "pacman -Syuu --noconfirm"
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-autotools mingw-w64-x86_64-libusb git make python pkg-config
 
       - name: Install build dependencies (packages)
         run: |
