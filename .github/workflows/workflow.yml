@@ -51,18 +51,16 @@ jobs:
           ./setup-x86_64.exe -q -D -R C:\cygwin64 -s http://cygwin.mirror.constant.com/
           ./setup-x86_64.exe -q -L -R C:\cygwin64 -P cygport,git,make,gcc-core,libncurses-devel,autoconf,automake,binutils,coreutils,gnupg,gzip,terminfo,terminfo-extra
 
-      - name: Add Cygwin to PATH
-        shell: powershell
+      - name: Add Cygwin to PATH and verify
+        shell: bash
         run: |
-          $env:PATH += ";C:\cygwin64\bin;C:\cygwin64\usr\local\bin;C:\cygwin64\usr\bin"
-          echo $env:PATH
-
-      - name: Check Cygport version
-        run: C:\cygwin64\bin\bash -lc "cygport --version"
+          echo 'export PATH=/cygdrive/c/cygwin64/bin:/cygdrive/c/cygwin64/usr/local/bin:/cygdrive/c/cygwin64/usr/bin:$PATH' >> $GITHUB_ENV
+          source $GITHUB_ENV
+          cygport --version
 
       - name: Clone and build readline using Cygport
         run: |
-          C:\cygwin64\bin\bash -lc "
+          C:/cygwin64/bin/bash -lc "
           git clone git://cygwin.com/git/cygwin-packages/readline.git
           cd readline
           cygport readline.cygport download all
