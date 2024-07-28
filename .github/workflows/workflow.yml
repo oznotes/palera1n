@@ -22,65 +22,27 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-windows-x64:
+  build:
     runs-on: windows-latest
-    env:
-      MSYS2_VERSION: 20210604
-      MSYS2_PATH: C:\msys64
-      MINGW_PREFIX: mingw-w64-x86_64
-      MBEDTLS_VERSION: 3.5.2
-      LIBUSB_VERSION: 1.0.27
-      READLINE_VERSION: 8.2
-      GPM_VERSION: 1.20.7
-      LIBIMOBILEDEVICE_COMMIT: ed0d66d0341562731bb19928dfe48155509fa7a7
-      LIBIRECOVERY_COMMIT: 7ce02c347b7c26e59498e6af31c9da51018d0fa1
-      LIBIMOBILEDEVICE_GLUE_COMMIT: 362f7848ac89b74d9dd113b38b51ecb601f76094
-      USBMUXD_COMMIT: bc0b91ca856811f4393318dc83db6dc3c1ac326d
-      LIBPLIST_COMMIT: 2117b8fdb6b4096455bd2041a63e59a028120136
-      LIBUSBMUXD_COMMIT: a7f0543fb1ecb20ac7121c0fd77297200e0e43fc
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - name: Download and install Cygwin (download step)
+      - name: Download and Install Cygwin
         run: |
           curl -L -O https://cygwin.com/setup-x86_64.exe
           ./setup-x86_64.exe -q -D -R C:\cygwin64 -s http://cygwin.mirror.constant.com/
-
-      - name: Install Cygwin packages
-        run: |
           ./setup-x86_64.exe -q -L -R C:\cygwin64 -P cygport,git,make,gcc-core,libncurses-devel,autoconf,automake,binutils,coreutils,gnupg,gzip,terminfo,terminfo-extra
 
-      - name: Verify Cygwin Installation
+      - name: Setup Cygwin Environment
         run: |
-          echo "Checking Cygwin root directory contents"
+          echo 'C:\cygwin64\bin' >> $GITHUB_PATH
+          echo 'C:\cygwin64\usr\local\bin' >> $GITHUB_PATH
+          echo 'C:\cygwin64\usr\bin' >> $GITHUB_PATH
+
+      - name: Verify Installation
+        run: |
           dir C:\cygwin64
-          echo "Checking Cygwin bin directory contents"
           dir C:\cygwin64\bin
-          echo "Verifying cygport command"
-          if (Test-Path -Path C:\cygwin64\bin\cygport) {
-              echo "cygport exists"
-          } else {
-              echo "cygport does not exist"
-          }
-
-      - name: Add Cygwin to PATH
-        run: |
-          echo 'export PATH=/cygdrive/c/cygwin64/bin:/cygdrive/c/cygwin64/usr/local/bin:/cygdrive/c/cygwin64/usr/bin:$PATH' >> $GITHUB_ENV
-          source $GITHUB_ENV
-
-      - name: Clone and build readline using Cygport
-        run: |
-          C:\cygwin64\bin\bash -lc "
-          git clone git://cygwin.com/git/cygwin-packages/readline.git
-          cd readline
-          cygport readline.cygport download all
-          cd $(cygport readline.cygport dir)
-          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-shared --enable-static
-          make -j$(nproc)
-          make install
-          "
-        shell: bash
+          C:\cygwin64\bin\bash -lc "cygport --version"
