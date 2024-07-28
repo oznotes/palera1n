@@ -45,10 +45,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download and install Cygwin
+      - name: Download and install Cygwin (download step)
         run: |
           curl -L -O https://cygwin.com/setup-x86_64.exe
           ./setup-x86_64.exe -q -D -R C:\cygwin64 -s http://cygwin.mirror.constant.com/
+
+      - name: Install Cygwin packages
+        run: |
           ./setup-x86_64.exe -q -L -R C:\cygwin64 -P cygport,git,make,gcc-core,libncurses-devel,autoconf,automake,binutils,coreutils,gnupg,gzip,terminfo,terminfo-extra
 
       - name: Verify Cygwin Installation
