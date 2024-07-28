@@ -2,18 +2,22 @@ name: Build palera1n for Linux x64
 
 on:
   push:
+    branches:
+      - main  # or your default branch name
     paths:
       - 'src/**'
       - 'include/**'
       - 'Makefile'
       - '.github/workflows/build-linux-x64.yml'
   pull_request:
+    branches:
+      - main  # or your default branch name
     paths:
       - 'src/**'
       - 'include/**'
       - 'Makefile'
       - '.github/workflows/build-linux-x64.yml'
-  workflow_dispatch:
+  workflow_dispatch:  # This allows manual triggering
 
 jobs:
   build-Linux:
