@@ -53,6 +53,7 @@ jobs:
             git
             make
             python
+            pkg-config
 
       - name: Setup Python
         uses: actions/setup-python@v2
@@ -69,48 +70,44 @@ jobs:
         run: |
           echo "CHECKRA1N_NAME=windows-x64" >> $GITHUB_ENV
           echo "ARCH_NAME=x64" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=/mingw64/lib/pkgconfig" >> $GITHUB_ENV
-          echo "CFLAGS=-I/mingw64/include -L/mingw64/lib" >> $GITHUB_ENV
-          echo "CXXFLAGS=-I/mingw64/include -L/mingw64/lib" >> $GITHUB_ENV
-          echo "LDFLAGS=-L/mingw64/lib" >> $GITHUB_ENV
-          echo "DESTDIR=$(pwd)/sysroot" >> $GITHUB_ENV
-          echo "PREFIX=/mingw64" >> $GITHUB_ENV
-          echo "CONFIGURE_ARGS=--prefix=/mingw64 --disable-shared --enable-static" >> $GITHUB_ENV
-
-      - name: Cache dependencies
-        id: cache-deps
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/deps
-          key: ${{ runner.os }}-deps-${{ hashFiles('**/workflow-deps-hash') }}
+          echo "PKG_CONFIG_PATH=/mingw64/lib/pkgconfig:/c/deps/lib/pkgconfig" >> $GITHUB_ENV
+          echo "CFLAGS=-I/mingw64/include -I/c/deps/include -L/mingw64/lib -L/c/deps/lib" >> $GITHUB_ENV
+          echo "CXXFLAGS=-I/mingw64/include -I/c/deps/include -L/mingw64/lib -L/c/deps/lib" >> $GITHUB_ENV
+          echo "LDFLAGS=-L/mingw64/lib -L/c/deps/lib" >> $GITHUB_ENV
+          echo "DESTDIR=/c/deps" >> $GITHUB_ENV
+          echo "PREFIX=/c/deps" >> $GITHUB_ENV
+          echo "CONFIGURE_ARGS=--prefix=/c/deps --disable-shared --enable-static" >> $GITHUB_ENV
 
       - name: Download and build dependencies
-        if: steps.cache-deps.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
-          mkdir -p ~/deps
-          cd ~/deps
-          curl -LO https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v${{ env.MBEDTLS_VERSION }}.tar.gz
-          tar -xzf v${{ env.MBEDTLS_VERSION }}.tar.gz
+          mkdir -p /c/deps
+          cd /c/deps
+          
+          # Build libplist
           git clone --depth=1 https://github.com/libimobiledevice/libplist
+          cd libplist
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython
+          make -j$(nproc)
+          make install
+          cd ..
+          
+          # Debug: Check libplist installation
+          ls -l /c/deps/lib
+          ls -l /c/deps/lib/pkgconfig
+          cat /c/deps/lib/pkgconfig/libplist-2.0.pc
+          
+          # Build other dependencies
           git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice-glue
           git clone --depth=1 https://github.com/libimobiledevice/libirecovery
           git clone --depth=1 https://github.com/libimobiledevice/libusbmuxd
           git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice
-
-          # Build MbedTLS
-          cd mbedtls-${{ env.MBEDTLS_VERSION }}
-          mkdir build && cd build
-          cmake .. -G Ninja -DCMAKE_INSTALL_PREFIX=${{ env.PREFIX }} -DENABLE_PROGRAMS=OFF -DENABLE_TESTING=OFF
-          ninja && ninja install
-          cd ../..
-
-          # Build other dependencies
-          for repo in libplist libimobiledevice-glue libirecovery libusbmuxd libimobiledevice; do
+          
+          for repo in libimobiledevice-glue libirecovery libusbmuxd libimobiledevice; do
             cd $repo
             ./autogen.sh
-            ./configure ${{ env.CONFIGURE_ARGS }} $([[ "$repo" == "libimobiledevice" ]] && echo "--with-mbedtls --disable-debug --disable-wireless-pairing")
+            ./configure ${{ env.CONFIGURE_ARGS }} $([[ "$repo" == "libimobiledevice" ]] && echo "--disable-debug --disable-wireless-pairing")
             make -j$(nproc)
             make install
             cd ..
@@ -119,6 +116,10 @@ jobs:
       - name: Build palera1n
         shell: msys2 {0}
         run: |
+          export PKG_CONFIG_PATH=${{ env.PKG_CONFIG_PATH }}
+          export CFLAGS="${{ env.CFLAGS }}"
+          export CXXFLAGS="${{ env.CXXFLAGS }}"
+          export LDFLAGS="${{ env.LDFLAGS }}"
           make -j$(nproc) ROOTFUL=1
           cp src/palera1n.exe palera1n.release.exe
 
@@ -132,6 +133,10 @@ jobs:
       - name: Build palera1n (Development)
         shell: msys2 {0}
         run: |
+          export PKG_CONFIG_PATH=${{ env.PKG_CONFIG_PATH }}
+          export CFLAGS="${{ env.CFLAGS }}"
+          export CXXFLAGS="${{ env.CXXFLAGS }}"
+          export LDFLAGS="${{ env.LDFLAGS }}"
           make clean
           make -j$(nproc) DEV_BUILD=1 ROOTFUL=1
           cp src/palera1n.exe palera1n.development.exe
