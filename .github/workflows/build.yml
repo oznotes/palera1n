@@ -9,7 +9,7 @@ on:
       - 'include/**'
       - 'Makefile'
       - 'CMakeLists.txt'
-      - '.github/workflows/build-windows.yml'
+      - '.github/workflows/build.yml'
   pull_request:
     paths:
       - 'src/**'
@@ -18,18 +18,24 @@ on:
       - 'include/**'
       - 'Makefile'
       - 'CMakeLists.txt'
-      - '.github/workflows/build-windows.yml'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
 
 jobs:
   build-windows-x64:
     runs-on: windows-latest
     env:
+      MSYS2_VERSION: 20210604
+      MSYS2_PATH: C:\msys64
+      MINGW_PREFIX: mingw-w64-x86_64
       MBEDTLS_VERSION: 3.5.2
       LIBUSB_VERSION: 1.0.27
+      READLINE_VERSION: 8.2
+      GPM_VERSION: 1.20.7
       LIBIMOBILEDEVICE_COMMIT: ed0d66d0341562731bb19928dfe48155509fa7a7
       LIBIRECOVERY_COMMIT: 7ce02c347b7c26e59498e6af31c9da51018d0fa1
       LIBIMOBILEDEVICE_GLUE_COMMIT: 362f7848ac89b74d9dd113b38b51ecb601f76094
+      USBMUXD_COMMIT: bc0b91ca856811f4393318dc83db6dc3c1ac326d
       LIBPLIST_COMMIT: 2117b8fdb6b4096455bd2041a63e59a028120136
       LIBUSBMUXD_COMMIT: a7f0543fb1ecb20ac7121c0fd77297200e0e43fc
 
@@ -40,121 +46,206 @@ jobs:
           fetch-depth: 0
 
       - name: Install MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: >-
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-autotools
-            mingw-w64-x86_64-libusb
-            git
-            make
-            python
-            pkg-config
-
-      - name: Setup Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
-
-      - name: Install Python packages
         run: |
-          python -m pip install --upgrade pip
-          pip install jsonschema jinja2
+          Invoke-WebRequest -Uri https://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-${{ env.MSYS2_VERSION }}.tar.xz -OutFile msys2-base-x86_64.tar.xz
+          tar -xf msys2-base-x86_64.tar.xz -C C:\
+          C:\msys64\usr\bin\bash -lc "pacman -Syuu --noconfirm"
+          C:\msys64\usr\bin\bash -lc "pacman -Syuu --noconfirm"
+
+      - name: Install build dependencies (packages)
+        run: |
+          C:\msys64\usr\bin\bash -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-pkg-config mingw-w64-x86_64-jsoncpp mingw-w64-x86_64-readline mingw-w64-x86_64-zstd mingw-w64-x86_64-mbedtls mingw-w64-x86_64-libusb mingw-w64-x86_64-python mingw-w64-x86_64-autoconf mingw-w64-x86_64-automake"
 
       - name: Setup environment
-        shell: msys2 {0}
         run: |
-          echo "CHECKRA1N_NAME=windows-x64" >> $GITHUB_ENV
-          echo "ARCH_NAME=x64" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=/mingw64/lib/pkgconfig:/c/deps/lib/pkgconfig" >> $GITHUB_ENV
-          echo "CFLAGS=-I/mingw64/include -I/c/deps/include -L/mingw64/lib -L/c/deps/lib" >> $GITHUB_ENV
-          echo "CXXFLAGS=-I/mingw64/include -I/c/deps/include -L/mingw64/lib -L/c/deps/lib" >> $GITHUB_ENV
-          echo "LDFLAGS=-L/mingw64/lib -L/c/deps/lib" >> $GITHUB_ENV
-          echo "DESTDIR=/c/deps" >> $GITHUB_ENV
-          echo "PREFIX=/c/deps" >> $GITHUB_ENV
-          echo "CONFIGURE_ARGS=--prefix=/c/deps --disable-shared --enable-static" >> $GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=$MSYS2_PATH\mingw64" >> $GITHUB_ENV
+          echo "PATH=$MSYS2_PATH\mingw64\bin;$MSYS2_PATH\usr\bin;$PATH" >> $GITHUB_ENV
+          echo "CXX=x86_64-w64-mingw32-g++" >> $GITHUB_ENV
+          echo "CC=x86_64-w64-mingw32-gcc" >> $GITHUB_ENV
 
-      - name: Download and build dependencies
-        shell: msys2 {0}
+      - name: Build Mbed TLS
         run: |
-          mkdir -p /c/deps
-          cd /c/deps
-          
-          # Build libplist
-          git clone --depth=1 https://github.com/libimobiledevice/libplist
-          cd libplist
-          ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython
+          C:\msys64\usr\bin\bash -lc "
+          curl -LO https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v${{ env.MBEDTLS_VERSION }}.tar.gz
+          tar -xf v${{ env.MBEDTLS_VERSION }}.tar.gz
+          cd mbedtls-${{ env.MBEDTLS_VERSION }}
+          mkdir build
+          cd build
+          cmake .. -G 'MinGW Makefiles' -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/mingw64
           make -j$(nproc)
           make install
-          cd ..
-          
-          # Debug: Check libplist installation
-          ls -l /c/deps/lib
-          ls -l /c/deps/lib/pkgconfig
-          cat /c/deps/lib/pkgconfig/libplist-2.0.pc
-          
-          # Build other dependencies
+          "
+
+      - name: Build libusb
+        run: |
+          C:\msys64\usr\bin\bash -lc "
+          curl -LO https://github.com/libusb/libusb/releases/download/v${{ env.LIBUSB_VERSION }}/libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
+          tar -xjf libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
+          cd libusb-${{ env.LIBUSB_VERSION }}
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-udev
+          make -j$(nproc)
+          make install
+          "
+
+      - name: Build readline
+        run: |
+          C:\msys64\usr\bin\bash -lc "
+          curl -LO https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz
+          tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
+          cd readline-${{ env.READLINE_VERSION }}
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64
+          make -j$(nproc)
+          make install
+          "
+
+      - name: Build libplist
+        run: |
+          C:\msys64\usr\bin\bash -lc "
+          git clone --depth=1 https://github.com/libimobiledevice/libplist
+          cd libplist
+          git fetch origin ${{ env.LIBPLIST_COMMIT }} && git reset --hard ${{ env.LIBPLIST_COMMIT }}
+          ./autogen.sh
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64
+          make -j$(nproc)
+          make install
+          "
+
+      - name: Build libimobiledevice-glue
+        run: |
+          C:\msys64\usr\bin\bash -lc "
           git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice-glue
+          cd libimobiledevice-glue
+          git fetch origin ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }} && git reset --hard ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }}
+          ./autogen.sh
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64
+          make -j$(nproc)
+          make install
+          "
+
+      - name: Build libirecovery
+        run: |
+          C:\msys64\usr\bin\bash -lc "
           git clone --depth=1 https://github.com/libimobiledevice/libirecovery
+          cd libirecovery
+          git fetch origin ${{ env.LIBIRECOVERY_COMMIT }} && git reset --hard ${{ env.LIBIRECOVERY_COMMIT }}
+          ./autogen.sh
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64
+          make -j$(nproc)
+          make install
+          "
+
+      - name: Build libusbmuxd
+        run: |
+          C:\msys64\usr\bin\bash -lc "
           git clone --depth=1 https://github.com/libimobiledevice/libusbmuxd
+          cd libusbmuxd
+          git fetch origin ${{ env.LIBUSBMUXD_COMMIT }} && git reset --hard ${{ env.LIBUSBMUXD_COMMIT }}
+          ./autogen.sh
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64
+          make -j$(nproc)
+          make install
+          "
+
+      - name: Build libimobiledevice
+        run: |
+          C:\msys64\usr\bin\bash -lc "
           git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice
-          
-          for repo in libimobiledevice-glue libirecovery libusbmuxd libimobiledevice; do
-            cd $repo
-            ./autogen.sh
-            ./configure ${{ env.CONFIGURE_ARGS }} $([[ "$repo" == "libimobiledevice" ]] && echo "--disable-debug --disable-wireless-pairing")
-            make -j$(nproc)
-            make install
-            cd ..
-          done
+          cd libimobiledevice
+          git fetch origin ${{ env.LIBIMOBILEDEVICE_COMMIT }} && git reset --hard ${{ env.LIBIMOBILEDEVICE_COMMIT }}
+          ./autogen.sh
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-shared --enable-static
+          make -j$(nproc)
+          make install
+          "
+
+      - name: Build usbmuxd
+        run: |
+          C:\msys64\usr\bin\bash -lc "
+          git clone --depth=1 https://github.com/libimobiledevice/usbmuxd
+          cd usbmuxd
+          git fetch origin ${{ env.USBMUXD_COMMIT }} && git reset --hard ${{ env.USBMUXD_COMMIT }}
+          ./autogen.sh
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --without-systemd
+          make -j$(nproc)
+          make install
+          "
 
       - name: Build palera1n
-        shell: msys2 {0}
         run: |
-          export PKG_CONFIG_PATH=${{ env.PKG_CONFIG_PATH }}
-          export CFLAGS="${{ env.CFLAGS }}"
-          export CXXFLAGS="${{ env.CXXFLAGS }}"
-          export LDFLAGS="${{ env.LDFLAGS }}"
-          make -j$(nproc) ROOTFUL=1
-          cp src/palera1n.exe palera1n.release.exe
+          C:\msys64\usr\bin\bash -lc "
+          mkdir -p dep_root/mingw64/{include,lib}
+          cp -a /mingw64/include dep_root/mingw64/
+          cp -a /mingw64/lib dep_root/mingw64/
+          find dep_root -name '*.dll' -delete
+          find dep_root -name '*.la' -delete
+          cd src
+          CC='x86_64-w64-mingw32-gcc' make -j$(nproc) ROOTFUL=1
+          cp palera1n.exe ../ready/binaries/palera1n-windows-x64.exe
+          "
 
-      - name: Generate debug symbols
-        shell: msys2 {0}
+      - name: Seperate debug symbols
         run: |
-          objcopy --only-keep-debug palera1n.release.exe palera1n.debug.exe
-          strip --strip-debug --strip-unneeded palera1n.release.exe
-          objcopy --add-gnu-debuglink=palera1n.debug.exe palera1n.release.exe
+          C:\msys64\usr\bin\bash -lc "
+          cd ready/binaries
+          x86_64-w64-mingw32-objcopy --only-keep-debug palera1n-windows-x64.exe palera1n-windows-x64.debug
+          x86_64-w64-mingw32-strip --strip-debug --strip-unneeded palera1n-windows-x64.exe
+          x86_64-w64-mingw32-objcopy --add-gnu-debuglink=palera1n-windows-x64.debug palera1n-windows-x64.exe
+          chmod -x palera1n-windows-x64.debug
+          "
 
       - name: Build palera1n (Development)
-        shell: msys2 {0}
         run: |
-          export PKG_CONFIG_PATH=${{ env.PKG_CONFIG_PATH }}
-          export CFLAGS="${{ env.CFLAGS }}"
-          export CXXFLAGS="${{ env.CXXFLAGS }}"
-          export LDFLAGS="${{ env.LDFLAGS }}"
-          make clean
-          make -j$(nproc) DEV_BUILD=1 ROOTFUL=1
-          cp src/palera1n.exe palera1n.development.exe
+          C:\msys64\usr\bin\bash -lc "
+          cd src
+          CC='x86_64-w64-mingw32-gcc' make -j$(nproc) clean
+          CC='x86_64-w64-mingw32-gcc' make -j$(nproc) DEV_BUILD=1 ROOTFUL=1
+          cp palera1n.exe ../ready/binaries/palera1n-windows-x64.development.exe
+          "
 
       - name: Prepare artifact
-        shell: msys2 {0}
         run: |
           mkdir -p ready/{binaries,binaries_development,debug_symbols}
-          mv palera1n.release.exe ready/binaries/palera1n-${{ env.CHECKRA1N_NAME }}.exe
-          mv palera1n.development.exe ready/binaries_development/palera1n-${{ env.CHECKRA1N_NAME }}.development.exe
-          mv palera1n.debug.exe ready/debug_symbols/palera1n-${{ env.CHECKRA1N_NAME }}.debug.exe
+          mv ready/binaries/palera1n-windows-x64.debug ready/debug_symbols/
+          mv ready/binaries/palera1n-windows-x64.exe ready/binaries/
+          mv ready/binaries/palera1n-windows-x64.development.exe ready/binaries_development/
+
+      - name: Build debs
+        run: |
+          C:\msys64\usr\bin\bash -lc "
+          version=$(git describe --always --tags --abbrev=7 | sed 's|^v||' | sed 's|-beta|~beta|')
+          if [ -z '$version' ]; then
+            version='0.0.1-$(git rev-parse --short HEAD)'
+          fi
+
+          cd ready/binaries
+          mkdir -p stage/DEBIAN
+          mkdir -p stage/usr/bin
+          mkdir -p stage/usr/share/man/man1
+          cp ../../packaging/control stage/DEBIAN/control
+
+          sed 's|@DEB_ARCH@|amd64|g' -i stage/DEBIAN/control
+          sed "s|@DEB_VERSION@|$version|g" -i stage/DEBIAN/control
+
+          install -Dm644 palera1n-windows-x64.exe stage/usr/bin/palera1n
+          gzip -c9 ../../docs/palera1n.1 > stage/usr/share/man/man1/palera1n.1.gz
+          chmod 755 stage/usr/bin/palera1n
+          chmod 644 stage/usr/share/man/man1/palera1n.1.gz
+
+          dpkg-deb --root-owner-group -b stage palera1n_amd64.deb
+          mv palera1n*.deb ../debian
+          rm -rf stage
+          "
+
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v7
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: palera1n-windows-x64
           path: |
-            ready/binaries/palera1n-${{ env.CHECKRA1N_NAME }}.exe
-            ready/binaries_development/palera1n-${{ env.CHECKRA1N_NAME }}.development.exe
-            ready/debug_symbols/palera1n-${{ env.CHECKRA1N_NAME }}.debug.exe
+            ready/binaries/palera1n-windows-x64.exe
+            ready/binaries_development/palera1n-windows-x64.development.exe
+            ready/debug_symbols/palera1n-windows-x64.debug
           retention-days: 90
