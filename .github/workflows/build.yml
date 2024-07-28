@@ -104,7 +104,7 @@ jobs:
 
       - name: Build readline
         run: |
-          C:\cygwin64\bin\bash -lc "
+          C:\\cygwin64\\bin\\bash -lc "
           git clone git://cygwin.com/git/cygwin-packages/readline.git
           cd readline
           cygport readline.cygport download all
@@ -113,6 +113,7 @@ jobs:
           make -j$(nproc)
           make install
           "
+
       - name: Build libplist
         run: |
           C:\msys64\usr\bin\bash -lc "
