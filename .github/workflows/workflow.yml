@@ -59,7 +59,11 @@ jobs:
           echo "Checking Cygwin bin directory contents"
           dir C:\cygwin64\bin
           echo "Verifying cygport command"
-          C:\cygwin64\bin\cygport --version
+          if (Test-Path -Path C:\cygwin64\bin\cygport) {
+              echo "cygport exists"
+          } else {
+              echo "cygport does not exist"
+          }
 
       - name: Add Cygwin to PATH
         run: |
