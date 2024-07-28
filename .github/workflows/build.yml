@@ -97,7 +97,9 @@ jobs:
           curl -LO https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz
           tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
           cd readline-${{ env.READLINE_VERSION }}
-          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64
+          export CFLAGS='-I/mingw64/include/w32api -D__USE_MINGW_ANSI_STDIO=1 -D_POSIX_C_SOURCE=200809L'
+          export CPPFLAGS='-I/mingw64/include/w32api -D__USE_MINGW_ANSI_STDIO=1 -D_POSIX_C_SOURCE=200809L'
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-shared --enable-static
           make -j$(nproc)
           make install
           "
