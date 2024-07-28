@@ -94,9 +94,9 @@ jobs:
       - name: Build readline
         run: |
           C:\msys64\usr\bin\bash -lc "
-          curl -LO https://ftp.gnu.org/gnu/readline/readline-8.1.tar.gz
-          tar -xf readline-8.1.tar.gz
-          cd readline-8.1
+          curl -LO https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz
+          tar -xf readline-8.2.tar.gz
+          cd readline-8.2
           
           # Patch rlprivate.h for missing headers and sigset_t
           sed -i '1i#include <winsock2.h>' rlprivate.h
@@ -107,6 +107,8 @@ jobs:
           sed -i '1i#include <windows.h>' input.c
           sed -i 's/alarm/NULL/g' input.c
           sed -i 's/return (_getch ())/return (_getch ());/' input.c
+          sed -i 's/^#include <sys\/types.h>/#include <sys\/types.h>\n#include <winsock2.h>/' input.c
+          sed -i 's/^#include <sys\/time.h>/#include <sys\/time.h>\n#include <windows.h>/' input.c
           
           export CFLAGS='-I/mingw64/include -I/mingw64/include/w32api -D__USE_MINGW_ANSI_STDIO=1'
           export CPPFLAGS='-I/mingw64/include -I/mingw64/include/w32api -D__USE_MINGW_ANSI_STDIO=1'
