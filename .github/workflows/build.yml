@@ -65,6 +65,12 @@ jobs:
           curl -L -O https://cygwin.com/setup-x86_64.exe
           ./setup-x86_64.exe -q -P cygport,git,make,gcc-core,libncurses-devel,autoconf,automake,binutils,coreutils,gnupg,gzip,terminfo,terminfo-extra
 
+      - name: Setup Cygwin Environment
+        run: |
+          echo "C:\cygwin64\bin" >> $GITHUB_PATH
+          echo "C:\cygwin64\usr\local\bin" >> $GITHUB_PATH
+          echo "C:\cygwin64\usr\bin" >> $GITHUB_PATH
+
       - name: Setup environment
         run: |
           echo "CMAKE_PREFIX_PATH=$MSYS2_PATH\mingw64" >> $GITHUB_ENV
@@ -96,14 +102,6 @@ jobs:
           make install
           "
 
-      - name: Build readline from Cygwin repository
-        run: |
-          C:\msys64\usr\bin\bash -lc "
-          export PATH=$MSYS2_PATH/usr/bin:$MSYS2_PATH/mingw64/bin:$PATH
-          git clone git://cygwin.com/git/cygwin-packages/readline.git
-          cd readline
-          cygport readline.cygport download all
-          "
 
       - name: Build libplist
         run: |
