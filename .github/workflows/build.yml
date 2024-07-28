@@ -71,6 +71,9 @@ jobs:
           echo "C:\\cygwin64\\usr\\local\\bin" >> $GITHUB_PATH
           echo "C:\\cygwin64\\usr\\bin" >> $GITHUB_PATH
 
+      - name: Verify cygport installation
+        run: C:\\cygwin64\\bin\\bash -lc "cygport --version"
+
 
       - name: Setup environment
         run: |
