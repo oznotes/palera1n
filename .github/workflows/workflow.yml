@@ -45,26 +45,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download Cygwin without installing
+      - name: Download and install Cygwin
         run: |
           curl -L -O https://cygwin.com/setup-x86_64.exe
           ./setup-x86_64.exe -q -D -R C:\cygwin64 -s http://cygwin.mirror.constant.com/
-
-      - name: Install Cygwin from local directory
-        run: |
-          ./setup-x86_64.exe -q -L -R C:\cygwin64
-
-      - name: Copy bash.sh to C:\cygwin64\bin
-        run: |
-          mkdir -p C:\cygwin64\bin
-          cp C:\cygwin64\etc\default\bash.sh C:\cygwin64\bin
+          ./setup-x86_64.exe -q -L -R C:\cygwin64 -P cygport,git,make,gcc-core,libncurses-devel,autoconf,automake,binutils,coreutils,gnupg,gzip,terminfo,terminfo-extra
 
       - name: Setup Cygwin environment
         run: |
           echo "C:\\cygwin64\\bin" >> $GITHUB_PATH
           echo "C:\\cygwin64\\usr\\local\\bin" >> $GITHUB_PATH
           echo "C:\\cygwin64\\usr\\bin" >> $GITHUB_PATH
-          export PATH=$MSYS2_PATH/usr/bin:$MSYS2_PATH/mingw64/bin:$PATH
+          export PATH=C:\\cygwin64\\bin:C:\\cygwin64\\usr\\local\\bin:C:\\cygwin64\\usr\\bin:$PATH
 
       - name: Check Cygport version
         run: |
