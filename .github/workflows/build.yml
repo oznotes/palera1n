@@ -94,9 +94,9 @@ jobs:
       - name: Build readline
         run: |
           C:\msys64\usr\bin\bash -lc "
-          curl -LO https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz
-          tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
-          cd readline-${{ env.READLINE_VERSION }}
+          curl -LO https://ftp.gnu.org/gnu/readline/readline-8.1.tar.gz
+          tar -xf readline-8.1.tar.gz
+          cd readline-8.1
           
           # Patch rlprivate.h for missing headers and sigset_t
           sed -i '1i#include <winsock2.h>' rlprivate.h
@@ -114,6 +114,7 @@ jobs:
           make -j$(nproc)
           make install
           "
+
 
 
       - name: Build libplist
