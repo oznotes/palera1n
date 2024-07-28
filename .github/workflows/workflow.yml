@@ -50,15 +50,17 @@ jobs:
           curl -L -O https://cygwin.com/setup-x86_64.exe
           ./setup-x86_64.exe -q -D -R C:\cygwin64 -s http://cygwin.mirror.constant.com/
           ./setup-x86_64.exe -q -L -R C:\cygwin64 -P cygport,git,make,gcc-core,libncurses-devel,autoconf,automake,binutils,coreutils,gnupg,gzip,terminfo,terminfo-extra
+          echo "C:\cygwin64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "C:\cygwin64\usr\local\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "C:\cygwin64\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "C:\\cygwin64\\bin;C:\\cygwin64\\usr\\local\\bin;C:\\cygwin64\\usr\\bin" >> $GITHUB_ENV
 
-      - name: Add Cygwin to PATH and verify
-        shell: bash
+      - name: Verify Cygport Installation
         run: |
-          echo 'export PATH=/cygdrive/c/cygwin64/bin:/cygdrive/c/cygwin64/usr/local/bin:/cygdrive/c/cygwin64/usr/bin:$PATH' >> $GITHUB_ENV
           source $GITHUB_ENV
-          echo "Current PATH: $PATH"
           which cygport
           cygport --version
+        shell: bash
 
       - name: Clone and build readline using Cygport
         run: |
