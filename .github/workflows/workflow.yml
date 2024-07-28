@@ -56,6 +56,8 @@ jobs:
 
       - name: Verify Cygwin Installation
         run: |
+          echo "Checking Cygwin root directory contents"
+          dir C:\cygwin64
           echo "Checking Cygwin bin directory contents"
           dir C:\cygwin64\bin
           echo "Verifying cygport command"
