@@ -216,7 +216,9 @@ jobs:
           ac_cv_func_realloc_0_nonnull=yes \
           ac_cv_c_bigendian=no \
           lt_cv_deplibs_check_method=pass_all \
-          lt_cv_sys_lib_search_path_spec=/usr/x86_64-w64-mingw32/lib
+          lt_cv_sys_lib_search_path_spec=/usr/x86_64-w64-mingw32/lib \
+          ac_cv_func_strnlen=yes \
+          ac_cv_func_strndup=yes
           make -j$(nproc)
           sudo make install
           cd ..
