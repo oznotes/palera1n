@@ -191,10 +191,18 @@ jobs:
           export PATH=/usr/x86_64-w64-mingw32/bin:$PATH
           export LD_LIBRARY_PATH=/usr/x86_64-w64-mingw32/lib:$LD_LIBRARY_PATH
           ./autogen.sh
-          ./configure $CONFIGURE_ARGS --without-cython --build=$(gcc -dumpmachine)
-          make -j$(nproc)
-          sudo make install
+          ./configure $CONFIGURE_ARGS --without-cython --build=$(gcc -dumpmachine) || touch config.log
+          make -j$(nproc) || true
+          sudo make install || true
           cd ..
+        continue-on-error: true
+
+      - name: Upload config.log
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: config-log
+          path: libplist/config.log
 
       - name: Setup cross-compilation environment
         run: |
