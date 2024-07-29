@@ -1,4 +1,4 @@
-name: Build palera1n Windows x64 (Cygwin)
+name: Build palera1n Windows x64
 
 on:
   push:
