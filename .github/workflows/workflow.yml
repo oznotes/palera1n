@@ -199,7 +199,8 @@ jobs:
             CXX=x86_64-w64-mingw32-g++ \
             CFLAGS="$CFLAGS" \
             CXXFLAGS="$CXXFLAGS" \
-            LDFLAGS="$LDFLAGS" || (cat config.log && false)
+            LDFLAGS="$LDFLAGS" \
+            --build=x86_64-pc-linux-gnu
           make -j$(nproc)
           sudo make install
           cd ..
