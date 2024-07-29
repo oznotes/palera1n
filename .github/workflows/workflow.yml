@@ -47,6 +47,41 @@ jobs:
           sudo apt-get install -y mingw-w64 cmake pkg-config autoconf automake autopoint libtool
           sudo pip3 install jsonschema jinja2
 
+      - name: Setup environment
+        run: |
+          echo "CHECKRA1N_NAME=windows-x86_64" >> $GITHUB_ENV
+          echo "ARCH_NAME=x86_64" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/x86_64-w64-mingw32/lib/pkgconfig" >> $GITHUB_ENV
+          echo "CFLAGS=-g -O2 -I/usr/x86_64-w64-mingw32/include -D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600" >> $GITHUB_ENV
+          echo "CXXFLAGS=-g -O2 -I/usr/x86_64-w64-mingw32/include -D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600" >> $GITHUB_ENV
+          echo "LDFLAGS=-L/usr/x86_64-w64-mingw32/lib" >> $GITHUB_ENV
+          echo "CROSS_COMPILE=x86_64-w64-mingw32-" >> $GITHUB_ENV
+          echo "CONFIGURE_ARGS=--host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32 --disable-shared --enable-static" >> $GITHUB_ENV
+
+      - name: Download dependencies (source code)
+        run: |
+          curl -LOOO \
+            https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v${{ env.MBEDTLS_VERSION }}.tar.gz \
+            https://github.com/libusb/libusb/releases/download/v${{ env.LIBUSB_VERSION }}/libusb-${{ env.LIBUSB_VERSION }}.tar.bz2 \
+            https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz
+          
+          tar -xf v${{ env.MBEDTLS_VERSION }}.tar.gz
+          tar -xjf libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
+          tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
+          
+          git clone --depth=1 https://github.com/libimobiledevice/libplist
+          git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice-glue
+          git clone --depth=1 https://github.com/libimobiledevice/libirecovery
+          git clone --depth=1 https://github.com/libimobiledevice/libusbmuxd
+          git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice
+          git clone --depth=1 https://github.com/libimobiledevice/usbmuxd
+          
+          cd libplist && git fetch origin ${{ env.LIBPLIST_COMMIT }} && git reset --hard ${{ env.LIBPLIST_COMMIT }} && cd ..
+          cd libirecovery && git fetch origin ${{ env.LIBIRECOVERY_COMMIT }} && git reset --hard ${{ env.LIBIRECOVERY_COMMIT }} && cd ..
+          cd libimobiledevice-glue && git fetch origin ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }} && git reset --hard ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }} && cd ..
+          cd usbmuxd && git fetch origin ${{ env.USBMUXD_COMMIT }} && git reset --hard ${{ env.USBMUXD_COMMIT }} && cd ..
+          cd libimobiledevice && git fetch origin ${{ env.LIBIMOBILEDEVICE_COMMIT }} && git reset --hard ${{ env.LIBIMOBILEDEVICE_COMMIT }} && cd ..
+          cd libusbmuxd && git fetch origin ${{ env.LIBUSBMUXD_COMMIT }} && git reset --hard ${{ env.LIBUSBMUXD_COMMIT }} && cd ..
       - name: Create toolchain file
         run: |
           cat << EOF > toolchain-mingw64.cmake
