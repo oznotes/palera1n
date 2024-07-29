@@ -101,17 +101,15 @@ jobs:
 
       - name: Build Mbed TLS
         run: |
-          cd mbedtls-${{ env.MBEDTLS_VERSION }}
-          cat ../patches/mbedtls/0001-Allow-empty-x509-cert-issuer.patch | patch -sN -d . -p1
+          cd mbedtls-${MBEDTLS_VERSION}
           mkdir build
           cd build
-          cmake .. \
-            -DCMAKE_TOOLCHAIN_FILE=../../toolchain-mingw64.cmake \
-            -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 \
-            -DUSE_SHARED_MBEDTLS_LIBRARY=OFF \
-            -DENABLE_TESTING=OFF \
-            -DENABLE_PROGRAMS=OFF \
-            -DCMAKE_BUILD_TYPE=Release
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../../toolchain-mingw64.cmake \
+          -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 \
+          -DUSE_SHARED_MBEDTLS_LIBRARY=OFF \
+          -DENABLE_TESTING=OFF \
+          -DENABLE_PROGRAMS=OFF \
+          -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
           sudo make install
           cd ../..
@@ -221,8 +219,6 @@ jobs:
           make -j$(nproc) || { cat config.log; exit 1; }
           sudo make install
           cd ..
-
-
 
 
       - name: Build libirecovery
