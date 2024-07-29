@@ -45,12 +45,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-autotools mingw-w64-x86_64-libusb git make python pkg-config
+      - name: Install MSYS2 packages
+        shell: pwsh
+        run: |
+          C:\msys64\usr\bin\bash -lc 'pacman -S --noconfirm mingw-w64-x86_64-readline mingw-w64-x86_64-ncurses'
 
       - name: Install build dependencies (packages)
         run: |
@@ -117,42 +115,17 @@ jobs:
           make -j$(nproc)
           make install
           "
-      - name: Install ncurses
-        shell: cmd
-        run: C:\cygwin64\bin\bash -lc "apt-cyg install libncurses-devel"
-
-      - name: Download readline sources
-        shell: cmd
-        run: C:\cygwin64\bin\bash -lc "cd readline && /usr/bin/cygport readline.cygport download all"
-
-      - name: Configure readline
-        shell: cmd
-        run: |
-          C:\cygwin64\bin\bash -lc "
-          cd readline
-          cd $(/usr/bin/cygport readline.cygport dir)
-          export LDFLAGS='-L/usr/lib'
-          export CPPFLAGS='-I/usr/include/ncurses'
-          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-shared --enable-static --with-curses
-          "
-
       - name: Build readline
-        shell: cmd
+        shell: pwsh
         run: |
-          C:\cygwin64\bin\bash -lc "
-          cd readline
-          cd $(/usr/bin/cygport readline.cygport dir)
+          C:\msys64\usr\bin\bash -lc '
+          curl -L -o readline-8.2.tar.gz https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz
+          tar xzf readline-8.2.tar.gz
+          cd readline-8.2
+          ./configure --prefix=/mingw64 --disable-shared --enable-static --with-curses
           make -j$(nproc)
-          "
-
-      - name: Install readline
-        shell: cmd
-        run: |
-          C:\cygwin64\bin\bash -lc "
-          cd readline
-          cd $(/usr/bin/cygport readline.cygport dir)
           make install
-          "
+          '
       - name: Build libplist
         run: |
           C:\msys64\usr\bin\bash -lc "
