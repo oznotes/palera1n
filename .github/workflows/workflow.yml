@@ -97,7 +97,10 @@ jobs:
           set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
           set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
           set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+          
+          set(CMAKE_MAKE_PROGRAM /usr/bin/make)
           EOF
+
 
       - name: Build Mbed TLS
         run: |
@@ -217,10 +220,11 @@ jobs:
           lt_cv_deplibs_check_method=pass_all \
           lt_cv_sys_lib_search_path_spec=/usr/x86_64-w64-mingw32/lib \
           ac_cv_func_strnlen=yes \
-          ac_cv_func_strndup=yes
-          make -j$(nproc)
+          ac_cv_func_strndup=yes || { cat config.log; exit 1; }
+          make -j$(nproc) || { cat config.log; exit 1; }
           sudo make install
           cd ..
+
 
 
       - name: Build libirecovery
