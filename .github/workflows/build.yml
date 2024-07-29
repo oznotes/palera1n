@@ -60,26 +60,25 @@ jobs:
         run: |
           C:\msys64\usr\bin\bash -lc "pacman -S --noconfirm autoconf automake binutils coreutils gnupg gzip"
 
-      - name: Setup Cygwin Environment
+      - name: Install Cygwin
+        shell: cmd
         run: |
-          echo "C:\\cygwin64\\bin" >> $GITHUB_PATH
-          echo "C:\\cygwin64\\usr\\local\\bin" >> $GITHUB_PATH
-          echo "C:\\cygwin64\\usr\\bin" >> $GITHUB_PATH
-
-      - name: Install Cygwin and cygport
-        run: |
-          curl -L -O https://cygwin.com/setup-x86_64.exe
-          ./setup-x86_64.exe -q -P cygport,git,make,gcc-core,libncurses-devel,autoconf,automake,binutils,coreutils,gnupg,gzip,terminfo,terminfo-extra
+          curl -L -o setup-x86_64.exe https://cygwin.com/setup-x86_64.exe
+          setup-x86_64.exe --quiet-mode --no-shortcuts --no-startmenu --no-desktop --only-site --root C:\cygwin64 --site http://cygwin.mirror.constant.com --packages cygport,git,make,gcc-core
 
       - name: Debug Cygwin installation
+        shell: cmd
         run: |
+          dir C:\cygwin64
           dir C:\cygwin64\bin
-          C:\cygwin64\bin\bash --version
+          C:\cygwin64\bin\bash.exe --version
 
       - name: Verify cygport and git installation
+        shell: cmd
         run: |
-          C:\cygwin64\bin\bash -lc "/usr/bin/cygport --version"
-          C:\cygwin64\bin\bash -lc "/usr/bin/git --version"
+          C:\cygwin64\bin\bash.exe -lc "cygport --version"
+          C:\cygwin64\bin\bash.exe -lc "git --version"
+          
 
       - name: Setup environment
         run: |
