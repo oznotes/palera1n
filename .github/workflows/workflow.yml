@@ -185,11 +185,6 @@ jobs:
           sudo make install
           cd ..
 
-      - name: Setup cross-compilation environment
-        run: |
-          echo "PATH=/usr/x86_64-w64-mingw32/bin:$PATH" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/usr/x86_64-w64-mingw32/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-
       - name: Build libplist
         run: |
           cd libplist
