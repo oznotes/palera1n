@@ -73,9 +73,8 @@ jobs:
 
       - name: Verify cygport and git installation
         run: |
-          echo "C:\cygwin64\bin" >> $env:PATH
-          C:\cygwin64\bin\bash -lc "cygport --version"
-          C:\cygwin64\bin\bash -lc "git --version"
+          C:\cygwin64\bin\bash -lc "/usr/bin/cygport --version"
+          C:\cygwin64\bin\bash -lc "/usr/bin/git --version"
 
       - name: Setup environment
         run: |
