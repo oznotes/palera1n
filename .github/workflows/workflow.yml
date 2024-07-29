@@ -1,100 +1,41 @@
-name: Build palera1n Windows x64
+name: Cygwin Test
 
 on:
   push:
-    paths:
-      - 'src/**'
-      - 'docs/**'
-      - 'patches/**'
-      - 'include/**'
-      - 'Makefile'
-      - 'CMakeLists.txt'
-      - '.github/workflows/build.yml'
+    branches: [ main ]
   pull_request:
-    paths:
-      - 'src/**'
-      - 'docs/**'
-      - 'patches/**'
-      - 'include/**'
-      - 'Makefile'
-      - 'CMakeLists.txt'
-      - '.github/workflows/build.yml'
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  build:
+  test-cygwin:
     runs-on: windows-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Install Cygwin and required packages
+      - name: Install Cygwin
         run: |
-          Invoke-WebRequest -Uri https://cygwin.com/setup-x86_64.exe -OutFile setup-x86_64.exe
-          .\setup-x86_64.exe -qnNdO -R C:/cygwin64 -s http://cygwin.mirror.constant.com -l C:/cygwin64/var/cache/setup -P git,make,gcc-core,gcc-g++,libncurses-devel,autoconf,automake,libtool,pkg-config,libssl-devel,libusb1.0-devel,libcurl-devel,libreadline-devel,zlib-devel,cmake,python3,python3-pip
+          curl -L -O https://cygwin.com/setup-x86_64.exe
+          .\setup-x86_64.exe -q -P cygport,git,make,gcc-core
 
-      - name: Set up Cygwin environment
+      - name: Debug Cygwin installation
+        shell: pwsh
         run: |
-          echo "C:\cygwin64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          echo "CYGWIN=winsymlinks:native" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Get-ChildItem "C:\cygwin64\bin"
+          & "C:\cygwin64\bin\bash.exe" --version
 
-      - name: Build dependencies
-        shell: C:\cygwin64\bin\bash.exe --login -o igncr '{0}'
+      - name: Verify cygport and git installation
+        shell: pwsh
         run: |
-          cd $GITHUB_WORKSPACE
-          # Build and install libplist
-          git clone https://github.com/libimobiledevice/libplist.git
-          cd libplist
-          ./autogen.sh
-          ./configure --prefix=/usr/local
-          make
-          make install
-          cd ..
+          & "C:\cygwin64\bin\bash.exe" -lc "cygport --version"
+          & "C:\cygwin64\bin\bash.exe" -lc "git --version"
 
-          # Build and install libimobiledevice-glue
-          git clone https://github.com/libimobiledevice/libimobiledevice-glue.git
-          cd libimobiledevice-glue
-          ./autogen.sh
-          ./configure --prefix=/usr/local
-          make
-          make install
-          cd ..
-
-          # Build and install libusbmuxd
-          git clone https://github.com/libimobiledevice/libusbmuxd.git
-          cd libusbmuxd
-          ./autogen.sh
-          ./configure --prefix=/usr/local
-          make
-          make install
-          cd ..
-
-          # Build and install libimobiledevice
-          git clone https://github.com/libimobiledevice/libimobiledevice.git
-          cd libimobiledevice
-          ./autogen.sh
-          ./configure --prefix=/usr/local
-          make
-          make install
-          cd ..
-
-      - name: Build palera1n
-        shell: C:\cygwin64\bin\bash.exe --login -o igncr '{0}'
+      - name: Check Cygwin PATH
+        shell: pwsh
         run: |
-          cd $GITHUB_WORKSPACE
-          export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-          make
-
-      - name: Package palera1n
-        shell: C:\cygwin64\bin\bash.exe --login -o igncr '{0}'
-        run: |
-          mkdir -p artifact
-          cp palera1n artifact/palera1n.exe
-          cp /usr/local/bin/cygwin1.dll artifact/
-          # Add any other necessary DLLs here
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: palera1n-windows-x64
-          path: artifact
+          $env:Path += ";C:\cygwin64\bin"
+          $env:Path -split ';'
+          Get-Command bash.exe | Format-List *
+          Get-Command cygport | Format-List *
+          Get-Command git | Format-List *
