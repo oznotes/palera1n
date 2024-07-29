@@ -1,4 +1,4 @@
-name: Build palera1n Linux x64 for Windows
+name: Build palera1n Windows x64
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - 'include/**'
       - 'Makefile'
       - 'CMakeLists.txt'
-      - '.github/workflows/build.yml'
+      - '.github/workflows/build-windows.yml'
   pull_request:
     paths:
       - 'src/**'
@@ -18,7 +18,7 @@ on:
       - 'include/**'
       - 'Makefile'
       - 'CMakeLists.txt'
-      - '.github/workflows/build.yml'
+      - '.github/workflows/build-windows.yml'
   workflow_dispatch:
 
 jobs:
@@ -28,7 +28,6 @@ jobs:
       MBEDTLS_VERSION: 3.5.2
       LIBUSB_VERSION: 1.0.27
       READLINE_VERSION: 8.2
-      GPM_VERSION: 1.20.7
       LIBIMOBILEDEVICE_COMMIT: ed0d66d0341562731bb19928dfe48155509fa7a7
       LIBIRECOVERY_COMMIT: 7ce02c347b7c26e59498e6af31c9da51018d0fa1
       LIBIMOBILEDEVICE_GLUE_COMMIT: 362f7848ac89b74d9dd113b38b51ecb601f76094
@@ -42,97 +41,41 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install build dependencies (packages)
+      - name: Install build dependencies
         run: |
-          sudo apt-get remove -y libssl-dev libreadline-dev
-          sudo apt-get install -y pkg-config autoconf automake autopoint mandoc mingw-w64
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64 cmake pkg-config autoconf automake autopoint libtool
           sudo pip3 install jsonschema jinja2
-
-      - name: Download toolchain checksum
-        run: |
-          curl -LO https://musl.cc/SHA512SUMS
-          echo "TOOLCHAIN_CHECKSUM=$(grep x86_64-w64-mingw32-cross.tgz SHA512SUMS | cut -d' ' -f1)" >> $GITHUB_ENV
-
-      - name: Download toolchain (cached)
-        id: toolchain_cache
-        uses: actions/cache@v3
-        with:
-          path: x86_64-w64-mingw32-cross.tgz
-          key: x86_64-${{ env.TOOLCHAIN_CHECKSUM }}-toolchain
-
-      - name: Download toolchain
-        if: steps.toolchain_cache.outputs.cache-hit != 'true'
-        run: |
-          curl -LO https://musl.cc/x86_64-w64-mingw32-cross.tgz
 
       - name: Setup environment
         run: |
-          tar -xf x86_64-w64-mingw32-cross.tgz
-          mkdir sysroot
-          echo "$(pwd)/x86_64-w64-mingw32-cross/bin" >> $GITHUB_PATH
           echo "CHECKRA1N_NAME=windows-x86_64" >> $GITHUB_ENV
           echo "ARCH_NAME=x86_64" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=$(pwd)/sysroot/usr/local/lib/pkgconfig" >> $GITHUB_ENV
-          echo "CFLAGS=-g -fdata-sections -ffunction-sections -I$(pwd)/sysroot/usr/local/include -L$(pwd)/sysroot/usr/local/lib -D_FILE_OFFSET_BITS=64 -D_TIME_BITS=64" >> $GITHUB_ENV
-          echo "CXXFLAGS=-g -fdata-sections -ffunction-sections -I$(pwd)/sysroot/usr/local/include -L$(pwd)/sysroot/usr/local/lib -D_FILE_OFFSET_BITS=64 -D_TIME_BITS=64" >> $GITHUB_ENV
-          echo "LDFLAGS=-g -Wl,--gc-sections -fdata-sections -ffunction-sections -I$(pwd)/sysroot/usr/local/include -L$(pwd)/sysroot/usr/local/lib" >> $GITHUB_ENV
-          echo "INSTALL=$(command -v install) --strip-program=x86_64-w64-mingw32-strip" >> $GITHUB_ENV
-          echo "DESTDIR=$(pwd)/sysroot" >> $GITHUB_ENV
-          echo "PREFIX=/usr/local" >> $GITHUB_ENV
-          echo "CONFIGURE_ARGS=--build=x86_64-linux-gnu --host=x86_64-w64-mingw32 --prefix=/usr/local --disable-shared --enable-static" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/x86_64-w64-mingw32/lib/pkgconfig" >> $GITHUB_ENV
+          echo "CFLAGS=-g -O2 -I/usr/x86_64-w64-mingw32/include -D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600" >> $GITHUB_ENV
+          echo "CXXFLAGS=-g -O2 -I/usr/x86_64-w64-mingw32/include -D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600" >> $GITHUB_ENV
+          echo "LDFLAGS=-L/usr/x86_64-w64-mingw32/lib" >> $GITHUB_ENV
           echo "CROSS_COMPILE=x86_64-w64-mingw32-" >> $GITHUB_ENV
-
-      - name: Check dependencies cache
-        run: |
-          echo "target: x86_64-w64-mingw32" > cache.txt
-          echo "mbedtls ${{ env.MBEDTLS_VERSION }}" >> cache.txt
-          echo "readline: ${{ env.READLINE_VERSION }}" >> cache.txt
-          echo "libimobiledevice: ${{ env.LIBIMOBILEDEVICE_COMMIT }}" >> cache.txt
-          echo "libirecovery: ${{ env.LIBIRECOVERY_COMMIT }}" >> cache.txt
-          echo "libimobiledevice-glue: ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }}" >> cache.txt
-          echo "libplist: ${{ env.LIBPLIST_COMMIT }}" >> cache.txt
-          echo "libusbmuxd: ${{ env.LIBUSBMUXD_COMMIT }}" >> cache.txt
-          echo "usbmuxd: ${{ env.USBMUXD_COMMIT }}" >> cache.txt
-          echo "cc: $(${{ env.CROSS_COMPILE }}gcc --version)" >> cache.txt
-          echo "CACHE_TXT_CHECKSUM=sysroot-$(sha512sum cache.txt | cut -d' ' -f1)" >> $GITHUB_ENV
-
-      - name: Download cached sysroot
-        id: sysroot_cache
-        uses: actions/cache@v3
-        with:
-          path: sysroot-${{ env.CACHE_TXT_CHECKSUM }}.txz
-          key: sysroot-${{ env.CACHE_TXT_CHECKSUM }}
-
-      - name: Extract cached sysroot
-        if: steps.sysroot_cache.outputs.cache-hit == 'true'
-        run: |
-          xz -dcT0 sysroot-${{ env.CACHE_TXT_CHECKSUM }}.txz | tar -x
-
-      - name: Setup sysroot
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p $(pwd)/sysroot/usr/local/lib
-          ln -sf $(pwd)/sysroot/usr/local/lib{,64}
+          echo "CONFIGURE_ARGS=--host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32 --disable-shared --enable-static" >> $GITHUB_ENV
 
       - name: Download dependencies (source code)
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
-          curl -LOOOOO \
+          curl -LOOO \
             https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v${{ env.MBEDTLS_VERSION }}.tar.gz \
             https://github.com/libusb/libusb/releases/download/v${{ env.LIBUSB_VERSION }}/libusb-${{ env.LIBUSB_VERSION }}.tar.bz2 \
-            https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz \
-            https://github.com/telmich/gpm/archive/refs/tags/${{ env.GPM_VERSION }}.tar.gz
-
+            https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz
+          
           tar -xf v${{ env.MBEDTLS_VERSION }}.tar.gz
           tar -xjf libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
           tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
-          tar -xf ${{ env.GPM_VERSION }}.tar.gz
+          
           git clone --depth=1 https://github.com/libimobiledevice/libplist
           git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice-glue
           git clone --depth=1 https://github.com/libimobiledevice/libirecovery
           git clone --depth=1 https://github.com/libimobiledevice/libusbmuxd
           git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice
           git clone --depth=1 https://github.com/libimobiledevice/usbmuxd
+          
           cd libplist && git fetch origin ${{ env.LIBPLIST_COMMIT }} && git reset --hard ${{ env.LIBPLIST_COMMIT }} && cd ..
           cd libirecovery && git fetch origin ${{ env.LIBIRECOVERY_COMMIT }} && git reset --hard ${{ env.LIBIRECOVERY_COMMIT }} && cd ..
           cd libimobiledevice-glue && git fetch origin ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }} && git reset --hard ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }} && cd ..
@@ -140,222 +83,170 @@ jobs:
           cd libimobiledevice && git fetch origin ${{ env.LIBIMOBILEDEVICE_COMMIT }} && git reset --hard ${{ env.LIBIMOBILEDEVICE_COMMIT }} && cd ..
           cd libusbmuxd && git fetch origin ${{ env.LIBUSBMUXD_COMMIT }} && git reset --hard ${{ env.LIBUSBMUXD_COMMIT }} && cd ..
 
+      - name: Create MinGW-w64 toolchain file
+        run: |
+          cat << EOF > toolchain-mingw64.cmake
+          set(CMAKE_SYSTEM_NAME Windows)
+          set(CMAKE_SYSTEM_PROCESSOR x86_64)
+          
+          set(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
+          set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
+          set(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)
+          
+          set(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32)
+          set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+          set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+          set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+          EOF
+
       - name: Build Mbed TLS
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
           cd mbedtls-${{ env.MBEDTLS_VERSION }}
-          cat ../patches/mbedtls/0001-Allow-empty-x509-cert-issuer.patch | patch -sN -d . -p1
-          mkdir build
-          cd build
-          cmake .. \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_CROSSCOMPILING=true \
-            -DCMAKE_SYSTEM_NAME=Windows \
-            -DCMAKE_SYSTEM_PROCESSOR=x86_64 \
-            -DCMAKE_C_COMPILER='${{ env.CROSS_COMPILE }}gcc' \
-            -DCMAKE_C_FLAGS='${{ env.CFLAGS }}'  \
-            -DCMAKE_CXX_FLAGS='${{ env.CXXFLAGS }}' \
-            -DCMAKE_FIND_ROOT_PATH="${{ env.DESTDIR }}" \
-            -DCMAKE_INSTALL_PREFIX="${{ env.PREFIX }}" \
+          mkdir build && cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../../toolchain-mingw64.cmake \
+            -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 \
+            -DUSE_SHARED_MBEDTLS_LIBRARY=OFF \
             -DENABLE_TESTING=OFF \
             -DENABLE_PROGRAMS=OFF \
-            -DCMAKE_INSTALL_SYSCONFDIR="/etc"
+            -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
-          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
-          cd ..
+          sudo make install
+          cd ../..
 
       - name: Build libusb
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
           cd libusb-${{ env.LIBUSB_VERSION }}
           ./configure ${{ env.CONFIGURE_ARGS }} --disable-udev
           make -j$(nproc)
-          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
+          sudo make install
           cd ..
-
-      - name: Apply patch to readline
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
-        run: |
-          cat > readline_fd_set_sigset_t.patch <<'EOF'
-          diff --git a/rlprivate.h b/rlprivate.h
-          index abcdef..123456 100644
-          --- a/rlprivate.h
-          +++ b/rlprivate.h
-          @@ -25,6 +25,8 @@
-           #include <readline/readline.h>
-           #include <readline/history.h>
-          
-          +#include <winsock2.h>
-          +#include <ws2tcpip.h>
-          +#include <windows.h>
-          +#include <signal.h>
-          
-           /* Some standard include files that readline needs. */
-           #include <stdio.h>
-          EOF
 
       - name: Build readline
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
           cd readline-${{ env.READLINE_VERSION }}
-          patch -p1 < ../readline_fd_set_sigset_t.patch
-          ./configure ${{ env.CONFIGURE_ARGS }}
+          
+          # Create a Windows-specific header
+          cat << EOF > win32.h
+          #ifndef _WIN32_H_
+          #define _WIN32_H_
+          #include <winsock2.h>
+          #include <windows.h>
+          #include <io.h>
+          typedef HANDLE sigset_t;
+          #define FIONREAD 0x541B
+          #define alarm(seconds) (0)
+          #define ioctl(fd, command, argument) ioctlsocket(fd, command, argument)
+          #define isatty(fd) _isatty(fd)
+          #define _getch getch
+          int getch(void);
+          #endif
+          EOF
+          
+          # Modify rlprivate.h to include our Windows header
+          sed -i '1i#include "win32.h"' rlprivate.h
+          
+          # Create a minimal termcap implementation
+          cat << EOF > termcap.c
+          #include <string.h>
+          int tgetent(char *bp, const char *name) { return 1; }
+          int tgetnum(char *id) { return -1; }
+          int tgetflag(char *id) { return 0; }
+          char *tgetstr(char *id, char **area) { return NULL; }
+          char *tgoto(const char *cap, int col, int row) { return NULL; }
+          int tputs(const char *str, int affcnt, int (*putc)(int)) { return 0; }
+          EOF
+          
+          # Modify configure script to use our termcap implementation
+          sed -i 's/ac_fn_c_check_func "$ac_func" "ac_cv_func_$ac_func"/$ac_func=yes/' configure
+          sed -i 's/for ac_lib in "" termcap tinfo curses ncurses/for ac_lib in ""/' configure
+          
+          # Modify input.c to fix the rl_getc function
+          sed -i 's/if (isatty (fd)/if (isatty (fd))/' input.c
+          sed -i 's/return (_getch ());/return getch();/' input.c
+          
+          # Configure and build
+          ./configure ${{ env.CONFIGURE_ARGS }} \
+            --without-curses \
+            CPPFLAGS="-D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600" \
+            CFLAGS="$CFLAGS -D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600"
+          
+          # Compile our termcap implementation
+          ${{ env.CROSS_COMPILE }}gcc -c termcap.c -o termcap.o
+          
+          # Add our termcap implementation to the library
           make -j$(nproc)
-          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
-          cd ..
-
-      - name: Build GPM
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
-        run: |
-          cd gpm-${{ env.GPM_VERSION }}
-          cat ../patches/gpm/*.patch | patch -sN -d . -p1
-          ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }}
-          gmake -j$(nproc)
-          gmake -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
+          ${{ env.CROSS_COMPILE }}ar r libreadline.a termcap.o
+          
+          sudo make install
           cd ..
 
       - name: Build libplist
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
           cd libplist
-          autoreconf -fiv
-          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython --host=x86_64-w64-mingw32
           make -j$(nproc)
-          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
+          sudo make install
           cd ..
 
       - name: Build libimobiledevice-glue
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
           cd libimobiledevice-glue
-          autoreconf -fiv
-          ./configure ${{ env.CONFIGURE_ARGS }}
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --host=x86_64-w64-mingw32
           make -j$(nproc)
-          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
+          sudo make install
           cd ..
 
-      - name: Build libirecovery (sorta)
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
+      - name: Build libirecovery
         run: |
-          sudo mv /usr/local /usr/local.bak
-          sudo ln -s ${{ env.DESTDIR }}${{ env.PREFIX }} /usr/local
           cd libirecovery
-          autoreconf -fiv
-          ./configure ${{ env.CONFIGURE_ARGS }}
-          echo -e 'all:\ninstall:' > tools/Makefile
-          make -ij$(nproc)
-          make -ij$(nproc) install DESTDIR=${{ env.DESTDIR }}
-          install -m644 src/.libs/libirecovery-1.0.a ${{ env.DESTDIR }}${{ env.PREFIX }}/lib
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --host=x86_64-w64-mingw32
+          make -j$(nproc)
+          sudo make install
           cd ..
 
       - name: Build libusbmuxd
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
           cd libusbmuxd
-          autoreconf -fiv
-          ./configure ${{ env.CONFIGURE_ARGS }}
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --host=x86_64-w64-mingw32
           make -j$(nproc)
-          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
+          sudo make install
           cd ..
 
       - name: Build libimobiledevice
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
           cd libimobiledevice
-          autoreconf -fiv
-          ./configure ${{ env.CONFIGURE_ARGS }} --with-mbedtls --disable-debug --disable-wireless-pairing
-          echo -e 'all:\ninstall:' > tools/Makefile
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --with-mbedtls --host=x86_64-w64-mingw32
           make -j$(nproc)
-          make -j$(nproc) install DESTDIR=${{ env.DESTDIR }}
+          sudo make install
           cd ..
-          sudo rm /usr/local
-          sudo mv /usr/local.bak /usr/local
 
       - name: Build usbmuxd
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
         run: |
           cd usbmuxd
-          autoreconf -fiv
-          ./configure ${{ env.CONFIGURE_ARGS }} --without-systemd
-          x86_64-w64-mingw32-gcc ${{ env.CFLAGS }} -I${{ env.DESTDIR }}/${{ env.PREFIX }}/include/libusb-1.0 src/*.c \
-            -DHAVE_CONFIG_H -no-pie \
-            -I. -static ${{ env.LDFLAGS }} -limobiledevice-1.0 -lusbmuxd-2.0 -limobiledevice-glue-1.0  \
-            -lplist-2.0 -lusb-1.0 -lmbedtls -lmbedcrypto -lmbedx509 -lpthread -o usbmuxd
-          mkdir -p ${{ env.DESTDIR }}/${{ env.PREFIX }}/sbin
-          x86_64-w64-mingw32-objcopy --only-keep-debug usbmuxd usbmuxd.debug
-          x86_64-w64-mingw32-strip --strip-debug --strip-unneeded usbmuxd
-          x86_64-w64-mingw32-objcopy --add-gnu-debuglink=usbmuxd.debug usbmuxd
-          install -m755 usbmuxd usbmuxd.debug ${{ env.DESTDIR }}/${{ env.PREFIX }}/sbin
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --without-systemd --host=x86_64-w64-mingw32
+          make -j$(nproc)
+          sudo make install
           cd ..
 
       - name: Build palera1n
         run: |
-          cp -a ${{ env.DESTDIR }}/${{ env.PREFIX }}/{include,lib} dep_root
-          find dep_root -name '*.so' -delete
-          find dep_root -name '*.la' -delete
-          CC="x86_64-w64-mingw32-gcc" make -j$(nproc) ROOTFUL=1
-          cp src/palera1n.exe palera1n.release
-
-      - name: Seperate debug symbols
-        run: |
-          x86_64-w64-mingw32-objcopy --only-keep-debug palera1n.release palera1n.debug
-          x86_64-w64-mingw32-strip --strip-debug --strip-unneeded palera1n.release
-          x86_64-w64-mingw32-objcopy --add-gnu-debuglink=palera1n.debug palera1n.release
-          chmod -x palera1n.debug
-
-      - name: Build palera1n (Development)
-        run: |
-          CC="x86_64-w64-mingw32-gcc" make -j$(nproc) clean
-          CC="x86_64-w64-mingw32-gcc" make -j$(nproc) DEV_BUILD=1 ROOTFUL=1
-          cp src/palera1n.exe palera1n.development
-
-      - name: Prepare artifact
-        run: |
-          mkdir -p ready/{binaries,binaries_development,debug_symbols}
-          mv palera1n.debug ready/debug_symbols/palera1n-${{ env.CHECKRA1N_NAME }}.debug
-          mv palera1n.release ready/binaries/palera1n-${{ env.CHECKRA1N_NAME }}
-          mv palera1n.development ready/binaries_development/palera1n-${{ env.CHECKRA1N_NAME }}.development
-
-      - name: Build debs
-        run: |
-          version=$(git describe --always --tags --abbrev=7 | sed 's|^v||' | sed 's|-beta|~beta|')
-          if [ -z "$version" ]; then
-            version="0.0.1-$(git rev-parse --short HEAD)"
-          fi
-          
-          make -j$(nproc) docs
-          mkdir -p stage/DEBIAN
-          mkdir -p stage/usr/bin
-          mkdir -p stage/usr/share/man/man1
-          cp packaging/control stage/DEBIAN/control
-          
-          sed 's|@DEB_ARCH@|amd64|g' -i stage/DEBIAN/control
-          sed "s|@DEB_VERSION@|$version|g" -i stage/DEBIAN/control
-          
-          install -Dm644 ready/binaries/palera1n-${{ env.CHECKRA1N_NAME }} stage/usr/bin/palera1n
-          gzip -c9 docs/palera1n.1 > stage/usr/share/man/man1/palera1n.1.gz
-          chmod 755 stage/usr/bin/palera1n
-          chmod 644 stage/usr/share/man/man1/palera1n.1.gz
-          
-          dpkg-deb --root-owner-group -b stage palera1n_amd64.deb
-          mv palera1n*.deb ready/debian
-          rm -rf stage
-      - name: Get branch name
-        id: branch-name
-        uses: tj-actions/branch-names@v7
+          CC="${{ env.CROSS_COMPILE }}gcc" make -j$(nproc) ROOTFUL=1
+          ${{ env.CROSS_COMPILE }}strip src/palera1n.exe
+          mv src/palera1n.exe palera1n-${{ env.CHECKRA1N_NAME }}.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: palera1n-windows-x64
-          path: |
-            ready/binaries/palera1n-${{ env.CHECKRA1N_NAME }}.exe
-            ready/binaries_development/palera1n-${{ env.CHECKRA1N_NAME }}.development.exe
-            ready/debug_symbols/palera1n-${{ env.CHECKRA1N_NAME }}.debug
+          path: palera1n-${{ env.CHECKRA1N_NAME }}.exe
           retention-days: 90
 
-      - name: Generate cached sysroot archive
-        if: steps.sysroot_cache.outputs.cache-hit != 'true'
-        run: |
-          tar -c sysroot | xz -zce9T 0 > sysroot-${{ env.CACHE_TXT_CHECKSUM }}.txz
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v7
