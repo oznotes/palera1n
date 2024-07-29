@@ -28,7 +28,6 @@ jobs:
       MBEDTLS_VERSION: 3.5.2
       LIBUSB_VERSION: 1.0.27
       READLINE_VERSION: 8.2
-      GPM_VERSION: 1.20.7
       LIBIMOBILEDEVICE_COMMIT: ed0d66d0341562731bb19928dfe48155509fa7a7
       LIBIRECOVERY_COMMIT: 7ce02c347b7c26e59498e6af31c9da51018d0fa1
       LIBIMOBILEDEVICE_GLUE_COMMIT: 362f7848ac89b74d9dd113b38b51ecb601f76094
@@ -53,24 +52,22 @@ jobs:
           echo "CHECKRA1N_NAME=windows-x86_64" >> $GITHUB_ENV
           echo "ARCH_NAME=x86_64" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=/usr/x86_64-w64-mingw32/lib/pkgconfig" >> $GITHUB_ENV
-          echo "CFLAGS=-g -O2 -I/usr/x86_64-w64-mingw32/include" >> $GITHUB_ENV
-          echo "CXXFLAGS=-g -O2 -I/usr/x86_64-w64-mingw32/include" >> $GITHUB_ENV
+          echo "CFLAGS=-g -O2 -I/usr/x86_64-w64-mingw32/include -D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600" >> $GITHUB_ENV
+          echo "CXXFLAGS=-g -O2 -I/usr/x86_64-w64-mingw32/include -D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600" >> $GITHUB_ENV
           echo "LDFLAGS=-L/usr/x86_64-w64-mingw32/lib" >> $GITHUB_ENV
           echo "CROSS_COMPILE=x86_64-w64-mingw32-" >> $GITHUB_ENV
           echo "CONFIGURE_ARGS=--host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32 --disable-shared --enable-static" >> $GITHUB_ENV
 
       - name: Download dependencies (source code)
         run: |
-          curl -LOOOOO \
+          curl -LOOO \
             https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v${{ env.MBEDTLS_VERSION }}.tar.gz \
             https://github.com/libusb/libusb/releases/download/v${{ env.LIBUSB_VERSION }}/libusb-${{ env.LIBUSB_VERSION }}.tar.bz2 \
-            https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz \
-            https://github.com/telmich/gpm/archive/refs/tags/${{ env.GPM_VERSION }}.tar.gz
+            https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz
           
           tar -xf v${{ env.MBEDTLS_VERSION }}.tar.gz
           tar -xjf libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
           tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
-          tar -xf ${{ env.GPM_VERSION }}.tar.gz
           
           git clone --depth=1 https://github.com/libimobiledevice/libplist
           git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice-glue
@@ -119,7 +116,7 @@ jobs:
       - name: Build libusb
         run: |
           cd libusb-${{ env.LIBUSB_VERSION }}
-          ./configure ${{ env.CONFIGURE_ARGS }}
+          ./configure ${{ env.CONFIGURE_ARGS }} --disable-udev
           make -j$(nproc)
           sudo make install
           cd ..
@@ -148,15 +145,6 @@ jobs:
           ./configure ${{ env.CONFIGURE_ARGS }} \
             CPPFLAGS="-D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600" \
             CFLAGS="$CFLAGS -D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600"
-          make -j$(nproc)
-          sudo make install
-          cd ..
-
-      - name: Build GPM
-        run: |
-          cd gpm-${{ env.GPM_VERSION }}
-          ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }}
           make -j$(nproc)
           sudo make install
           cd ..
