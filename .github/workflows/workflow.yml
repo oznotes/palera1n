@@ -138,14 +138,34 @@ jobs:
           # Modify rlprivate.h to include our Windows header
           sed -i '1i#include "win32.h"' rlprivate.h
           
-          # Modify configure script to use Windows libraries
-          sed -i 's/-lncurses/-luser32 -lws2_32/g' configure
+          # Create a minimal termcap implementation
+          cat << EOF > termcap.c
+          #include <string.h>
+          int tgetent(char *bp, const char *name) { return 1; }
+          int tgetnum(char *id) { return -1; }
+          int tgetflag(char *id) { return 0; }
+          char *tgetstr(char *id, char **area) { return NULL; }
+          char *tgoto(const char *cap, int col, int row) { return NULL; }
+          int tputs(const char *str, int affcnt, int (*putc)(int)) { return 0; }
+          EOF
+          
+          # Modify configure script to use our termcap implementation
+          sed -i 's/ac_fn_c_check_func "$ac_func" "ac_cv_func_$ac_func"/$ac_func=yes/' configure
+          sed -i 's/for ac_lib in "" termcap tinfo curses ncurses/for ac_lib in ""/' configure
           
           # Configure and build
           ./configure ${{ env.CONFIGURE_ARGS }} \
+            --without-curses \
             CPPFLAGS="-D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600" \
             CFLAGS="$CFLAGS -D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600"
+          
+          # Compile our termcap implementation
+          ${{ env.CROSS_COMPILE }}gcc -c termcap.c -o termcap.o
+          
+          # Add our termcap implementation to the library
           make -j$(nproc)
+          ${{ env.CROSS_COMPILE }}ar r libreadline.a termcap.o
+          
           sudo make install
           cd ..
 
