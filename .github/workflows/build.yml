@@ -51,7 +51,7 @@ jobs:
           msystem: MINGW64
           update: true
           install: mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-autotools mingw-w64-x86_64-libusb git make python pkg-config
-          
+
       - name: Install build dependencies (packages)
         run: |
           C:\msys64\usr\bin\bash -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-pkg-config mingw-w64-x86_64-jsoncpp mingw-w64-x86_64-readline mingw-w64-x86_64-zstd mingw-w64-x86_64-mbedtls mingw-w64-x86_64-libusb mingw-w64-x86_64-python mingw-w64-x86_64-cython"
@@ -65,27 +65,6 @@ jobs:
         run: |
           curl -L -o setup-x86_64.exe https://cygwin.com/setup-x86_64.exe
           setup-x86_64.exe --quiet-mode --no-shortcuts --no-startmenu --no-desktop --only-site --root C:\cygwin64 --site http://cygwin.mirror.constant.com --packages cygport,git,make,gcc-core
-
-      - name: Debug Cygwin installation
-        shell: cmd
-        run: |
-          dir C:\cygwin64
-          dir C:\cygwin64\bin
-          C:\cygwin64\bin\bash.exe --version
-
-      - name: Verify cygport and git installation
-        shell: cmd
-        run: |
-          C:\cygwin64\bin\bash.exe -lc "cygport --version"
-          C:\cygwin64\bin\bash.exe -lc "git --version"
-
-      - name: Check cygport location
-        shell: cmd
-        run: C:\cygwin64\bin\bash -lc "which cygport"
-
-      - name: List /usr/bin contents
-        shell: cmd
-        run: C:\cygwin64\bin\bash -lc "ls -l /usr/bin | grep cygport"
 
       - name: Setup environment
         run: |
