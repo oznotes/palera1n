@@ -196,13 +196,8 @@ jobs:
           export PATH=/usr/x86_64-w64-mingw32/bin:$PATH
           export LD_LIBRARY_PATH=/usr/x86_64-w64-mingw32/lib:$LD_LIBRARY_PATH
           echo "CONFIGURE_ARGS: $CONFIGURE_ARGS"
-          echo "CC: $CC"
-          echo "CXX: $CXX"
-          echo "CFLAGS: $CFLAGS"
-          echo "CXXFLAGS: $CXXFLAGS"
-          echo "LDFLAGS: $LDFLAGS"
           ./autogen.sh
-          ./configure $CONFIGURE_ARGS --without-cython
+          eval "./configure $CONFIGURE_ARGS --without-cython"
           make -j$(nproc)
           sudo make install
           cd ..
