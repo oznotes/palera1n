@@ -45,11 +45,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install MSYS2 packages
-        shell: pwsh
-        run: |
-          C:\msys64\usr\bin\bash -lc 'pacman -S --noconfirm mingw-w64-x86_64-readline mingw-w64-x86_64-ncurses'
-
+      - name: Install MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-autotools mingw-w64-x86_64-libusb git make python pkg-config
+          
       - name: Install build dependencies (packages)
         run: |
           C:\msys64\usr\bin\bash -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-pkg-config mingw-w64-x86_64-jsoncpp mingw-w64-x86_64-readline mingw-w64-x86_64-zstd mingw-w64-x86_64-mbedtls mingw-w64-x86_64-libusb mingw-w64-x86_64-python mingw-w64-x86_64-cython"
