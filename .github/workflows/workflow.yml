@@ -196,15 +196,19 @@ jobs:
           sudo make install
           cd ..
 
+      - name: Setup cross-compilation environment
+        run: |
+          echo "PATH=/usr/x86_64-w64-mingw32/bin:$PATH" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/usr/x86_64-w64-mingw32/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+
       - name: Build libimobiledevice-glue
         run: |
           cd libimobiledevice-glue
           ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --host=x86_64-w64-mingw32
+          ./configure $CONFIGURE_ARGS --build=$(gcc -dumpmachine)
           make -j$(nproc)
           sudo make install
           cd ..
-
       - name: Build libirecovery
         run: |
           cd libirecovery
