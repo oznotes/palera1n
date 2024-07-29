@@ -119,7 +119,7 @@ jobs:
           "
       - name: Install ncurses
         shell: cmd
-        run: C:\cygwin64\bin\setup-x86_64.exe -q -P libncurses-devel
+        run: C:\cygwin64\bin\bash -lc "apt-cyg install libncurses-devel"
 
       - name: Download readline sources
         shell: cmd
