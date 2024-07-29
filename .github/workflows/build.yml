@@ -87,10 +87,6 @@ jobs:
         shell: cmd
         run: C:\cygwin64\bin\bash -lc "ls -l /usr/bin | grep cygport"
 
-      - name: Install cygport
-        shell: cmd
-        run: C:\cygwin64\bin\setup-x86_64.exe -q -P cygport
-
       - name: Setup environment
         run: |
           echo "CMAKE_PREFIX_PATH=$MSYS2_PATH\mingw64" >> $GITHUB_ENV
