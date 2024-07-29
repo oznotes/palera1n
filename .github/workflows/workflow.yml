@@ -15,34 +15,25 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install Cygwin
+        shell: cmd
         run: |
-          curl -L -O https://cygwin.com/setup-x86_64.exe
-          .\setup-x86_64.exe -q -P cygport,git,make,gcc-core
+          curl -L -o setup-x86_64.exe https://cygwin.com/setup-x86_64.exe
+          setup-x86_64.exe --quiet-mode --no-shortcuts --no-startmenu --no-desktop --only-site --root C:\cygwin64 --site http://cygwin.mirror.constant.com --packages cygport,git,make,gcc-core
 
       - name: Debug Cygwin installation
-        shell: pwsh
+        shell: cmd
         run: |
-          $cygwinPath = Get-ChildItem C:\ -Directory -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq "cygwin64" } | Select-Object -First 1 -ExpandProperty FullName
-          if ($cygwinPath) {
-            Write-Host "Cygwin installed at: $cygwinPath"
-            Get-ChildItem "$cygwinPath\bin"
-            & "$cygwinPath\bin\bash.exe" --version
-          } else {
-            Write-Host "Cygwin installation not found"
-          }
+          dir C:\cygwin64
+          dir C:\cygwin64\bin
+          C:\cygwin64\bin\bash.exe --version
 
       - name: Verify cygport and git installation
-        shell: pwsh
+        shell: cmd
         run: |
-          $cygwinPath = Get-ChildItem C:\ -Directory -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq "cygwin64" } | Select-Object -First 1 -ExpandProperty FullName
-          if ($cygwinPath) {
-            & "$cygwinPath\bin\bash.exe" -lc "cygport --version"
-            & "$cygwinPath\bin\bash.exe" -lc "git --version"
-          } else {
-            Write-Host "Cygwin installation not found"
-          }
+          C:\cygwin64\bin\bash.exe -lc "cygport --version"
+          C:\cygwin64\bin\bash.exe -lc "git --version"
 
       - name: Check system PATH
-        shell: pwsh
+        shell: cmd
         run: |
-          $env:Path -split ';'
+          echo %PATH%
