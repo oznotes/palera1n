@@ -1,39 +1,174 @@
-name: Cygwin Test
+name: Build palera1n Windows x64
 
 on:
   push:
-    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'docs/**'
+      - 'patches/**'
+      - 'include/**'
+      - 'Makefile'
+      - 'CMakeLists.txt'
+      - '.github/workflows/build-windows.yml'
   pull_request:
-    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'docs/**'
+      - 'patches/**'
+      - 'include/**'
+      - 'Makefile'
+      - 'CMakeLists.txt'
+      - '.github/workflows/build-windows.yml'
   workflow_dispatch:
 
 jobs:
-  test-cygwin:
-    runs-on: windows-latest
+  build-windows-x64:
+    runs-on: ubuntu-latest
+    env:
+      MBEDTLS_VERSION: 3.5.2
+      LIBUSB_VERSION: 1.0.27
+      READLINE_VERSION: 8.2
+      LIBIMOBILEDEVICE_COMMIT: ed0d66d0341562731bb19928dfe48155509fa7a7
+      LIBIRECOVERY_COMMIT: 7ce02c347b7c26e59498e6af31c9da51018d0fa1
+      LIBIMOBILEDEVICE_GLUE_COMMIT: 362f7848ac89b74d9dd113b38b51ecb601f76094
+      USBMUXD_COMMIT: bc0b91ca856811f4393318dc83db6dc3c1ac326d
+      LIBPLIST_COMMIT: 2117b8fdb6b4096455bd2041a63e59a028120136
+      LIBUSBMUXD_COMMIT: a7f0543fb1ecb20ac7121c0fd77297200e0e43fc
+
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Install Cygwin
-        shell: cmd
+      - name: Install build dependencies
         run: |
-          curl -L -o setup-x86_64.exe https://cygwin.com/setup-x86_64.exe
-          setup-x86_64.exe --quiet-mode --no-shortcuts --no-startmenu --no-desktop --only-site --root C:\cygwin64 --site http://cygwin.mirror.constant.com --packages cygport,git,make,gcc-core
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64 cmake pkg-config autoconf automake autopoint libtool
+          sudo pip3 install jsonschema jinja2
 
-      - name: Debug Cygwin installation
-        shell: cmd
+      - name: Setup environment
         run: |
-          dir C:\cygwin64
-          dir C:\cygwin64\bin
-          C:\cygwin64\bin\bash.exe --version
+          echo "CHECKRA1N_NAME=windows-x86_64" >> $GITHUB_ENV
+          echo "ARCH_NAME=x86_64" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/x86_64-w64-mingw32/lib/pkgconfig" >> $GITHUB_ENV
+          echo "CFLAGS=-g -O2 -I/usr/x86_64-w64-mingw32/include" >> $GITHUB_ENV
+          echo "CXXFLAGS=-g -O2 -I/usr/x86_64-w64-mingw32/include" >> $GITHUB_ENV
+          echo "LDFLAGS=-L/usr/x86_64-w64-mingw32/lib" >> $GITHUB_ENV
+          echo "CROSS_COMPILE=x86_64-w64-mingw32-" >> $GITHUB_ENV
+          echo "CONFIGURE_ARGS=--host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32 --disable-shared --enable-static" >> $GITHUB_ENV
 
-      - name: Verify cygport and git installation
-        shell: cmd
+      - name: Download dependencies (source code)
         run: |
-          C:\cygwin64\bin\bash.exe -lc "cygport --version"
-          C:\cygwin64\bin\bash.exe -lc "git --version"
+          curl -LOOOOO \
+            https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v${{ env.MBEDTLS_VERSION }}.tar.gz \
+            https://github.com/libusb/libusb/releases/download/v${{ env.LIBUSB_VERSION }}/libusb-${{ env.LIBUSB_VERSION }}.tar.bz2 \
+            https://mirror-hk.koddos.net/gnu/readline/readline-${{ env.READLINE_VERSION }}.tar.gz
+          
+          tar -xf v${{ env.MBEDTLS_VERSION }}.tar.gz
+          tar -xjf libusb-${{ env.LIBUSB_VERSION }}.tar.bz2
+          tar -xf readline-${{ env.READLINE_VERSION }}.tar.gz
+          
+          git clone --depth=1 https://github.com/libimobiledevice/libplist
+          git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice-glue
+          git clone --depth=1 https://github.com/libimobiledevice/libirecovery
+          git clone --depth=1 https://github.com/libimobiledevice/libusbmuxd
+          git clone --depth=1 https://github.com/libimobiledevice/libimobiledevice
+          git clone --depth=1 https://github.com/libimobiledevice/usbmuxd
+          
+          cd libplist && git fetch origin ${{ env.LIBPLIST_COMMIT }} && git reset --hard ${{ env.LIBPLIST_COMMIT }} && cd ..
+          cd libirecovery && git fetch origin ${{ env.LIBIRECOVERY_COMMIT }} && git reset --hard ${{ env.LIBIRECOVERY_COMMIT }} && cd ..
+          cd libimobiledevice-glue && git fetch origin ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }} && git reset --hard ${{ env.LIBIMOBILEDEVICE_GLUE_COMMIT }} && cd ..
+          cd usbmuxd && git fetch origin ${{ env.USBMUXD_COMMIT }} && git reset --hard ${{ env.USBMUXD_COMMIT }} && cd ..
+          cd libimobiledevice && git fetch origin ${{ env.LIBIMOBILEDEVICE_COMMIT }} && git reset --hard ${{ env.LIBIMOBILEDEVICE_COMMIT }} && cd ..
+          cd libusbmuxd && git fetch origin ${{ env.LIBUSBMUXD_COMMIT }} && git reset --hard ${{ env.LIBUSBMUXD_COMMIT }} && cd ..
 
-      - name: Check system PATH
-        shell: cmd
+      - name: Build Mbed TLS
         run: |
-          echo %PATH%
+          cd mbedtls-${{ env.MBEDTLS_VERSION }}
+          mkdir build && cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain-mingw64.cmake \
+            -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 \
+            -DUSE_SHARED_MBEDTLS_LIBRARY=OFF \
+            -DENABLE_TESTING=OFF \
+            -DENABLE_PROGRAMS=OFF
+          make -j$(nproc)
+          sudo make install
+          cd ../..
+
+      - name: Build libusb
+        run: |
+          cd libusb-${{ env.LIBUSB_VERSION }}
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          make -j$(nproc)
+          sudo make install
+          cd ..
+
+      - name: Build readline
+        run: |
+          cd readline-${{ env.READLINE_VERSION }}
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          make -j$(nproc)
+          sudo make install
+          cd ..
+
+      - name: Build libplist
+        run: |
+          cd libplist
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython
+          make -j$(nproc)
+          sudo make install
+          cd ..
+
+      - name: Build libimobiledevice-glue
+        run: |
+          cd libimobiledevice-glue
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          make -j$(nproc)
+          sudo make install
+          cd ..
+
+      - name: Build libirecovery
+        run: |
+          cd libirecovery
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          make -j$(nproc)
+          sudo make install
+          cd ..
+
+      - name: Build libusbmuxd
+        run: |
+          cd libusbmuxd
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }}
+          make -j$(nproc)
+          sudo make install
+          cd ..
+
+      - name: Build libimobiledevice
+        run: |
+          cd libimobiledevice
+          ./autogen.sh
+          ./configure ${{ env.CONFIGURE_ARGS }} --with-mbedtls
+          make -j$(nproc)
+          sudo make install
+          cd ..
+
+      - name: Build palera1n
+        run: |
+          CC="${{ env.CROSS_COMPILE }}gcc" make -j$(nproc) ROOTFUL=1
+          mv src/palera1n.exe palera1n-${{ env.CHECKRA1N_NAME }}.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: palera1n-windows-x64
+          path: palera1n-${{ env.CHECKRA1N_NAME }}.exe
+          retention-days: 90
+
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v7
