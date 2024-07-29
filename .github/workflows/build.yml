@@ -117,41 +117,25 @@ jobs:
           make -j$(nproc)
           make install
           "
-
       - name: Clone readline
         shell: cmd
-        run: C:\cygwin64\bin\bash -lc "git clone git://cygwin.com/git/cygwin-packages/readline.git"
+        run: C:\cygwin64\bin\bash.exe -lc "git clone git://cygwin.com/git/cygwin-packages/readline.git"
 
       - name: Download readline sources
         shell: cmd
-        run: C:\cygwin64\bin\bash -lc "cd readline && /usr/bin/cygport readline.cygport download all"
+        run: C:\cygwin64\bin\bash.exe -lc "cd readline && /usr/bin/cygport readline.cygport download all"
 
       - name: Configure readline
         shell: cmd
-        run: |
-          C:\cygwin64\bin\bash -lc "
-          cd readline
-          cd $(/usr/bin/cygport readline.cygport dir)
-          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-shared --enable-static
-          "
+        run: C:\cygwin64\bin\bash.exe -lc "cd readline && cd $(/usr/bin/cygport readline.cygport dir) && ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-shared --enable-static"
 
       - name: Build readline
         shell: cmd
-        run: |
-          C:\cygwin64\bin\bash -lc "
-          cd readline
-          cd $(/usr/bin/cygport readline.cygport dir)
-          make -j$(nproc)
-          "
+        run: C:\cygwin64\bin\bash.exe -lc "cd readline && cd $(/usr/bin/cygport readline.cygport dir) && make -j$(nproc)"
 
       - name: Install readline
         shell: cmd
-        run: |
-          C:\cygwin64\bin\bash -lc "
-          cd readline
-          cd $(/usr/bin/cygport readline.cygport dir)
-          make install
-          "
+        run: C:\cygwin64\bin\bash.exe -lc "cd readline && cd $(/usr/bin/cygport readline.cygport dir) && make install"
 
       - name: Build libplist
         run: |
