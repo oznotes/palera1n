@@ -47,7 +47,6 @@ jobs:
           sudo apt-get install -y mingw-w64 cmake pkg-config autoconf automake autopoint libtool
           sudo pip3 install jsonschema jinja2
 
-
       - name: Setup environment
         run: |
           echo "CHECKRA1N_NAME=windows-x86_64" >> $GITHUB_ENV
@@ -211,7 +210,7 @@ jobs:
           CC=x86_64-w64-mingw32-gcc \
           CXX=x86_64-w64-mingw32-g++ \
           CFLAGS="-I/usr/x86_64-w64-mingw32/include" \
-          LDFLAGS="-L/usr/x86_64-w64-mingw32/lib" \
+          LDFLAGS="-L/usr/x86_64-w64-mingw32/lib -lIphlpapi -lws2_32 -lole32 -luuid" \
           ac_cv_func_malloc_0_nonnull=yes \
           ac_cv_func_realloc_0_nonnull=yes \
           ac_cv_c_bigendian=no \
@@ -222,6 +221,7 @@ jobs:
           make -j$(nproc)
           sudo make install
           cd ..
+
 
       - name: Build libirecovery
         run: |
