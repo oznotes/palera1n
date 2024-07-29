@@ -72,11 +72,10 @@ jobs:
           ./setup-x86_64.exe -q -P cygport,git,make,gcc-core,libncurses-devel,autoconf,automake,binutils,coreutils,gnupg,gzip,terminfo,terminfo-extra
 
       - name: Verify cygport and git installation
-        shell: pwsh
         run: |
-          & "C:\cygwin64\bin\bash.exe" -lc "cygport --version"
-          & "C:\cygwin64\bin\bash.exe" -lc "git --version"
-          
+          C:\msys64\usr\bin\bash -lc "cygport --version"
+          C:\msys64\usr\bin\bash -lc "git --version"
+
       - name: Setup environment
         run: |
           echo "CMAKE_PREFIX_PATH=$MSYS2_PATH\mingw64" >> $GITHUB_ENV
