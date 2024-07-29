@@ -123,15 +123,16 @@ jobs:
           "
 
       - name: Build readline
+        shell: cmd
         run: |
-          C:\\cygwin64\\bin\\bash -lc "
-          export PATH=/usr/bin:/mingw64/bin:$PATH
+          C:\cygwin64\bin\bash -lc "
+          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin:$PATH
           git clone git://cygwin.com/git/cygwin-packages/readline.git
           cd readline
-          cygport readline.cygport download all
-          cd \$(cygport readline.cygport dir)
+          /usr/bin/cygport readline.cygport download all
+          cd $(/usr/bin/cygport readline.cygport dir)
           ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-shared --enable-static
-          make -j\$(nproc)
+          make -j$(nproc)
           make install
           "
 
