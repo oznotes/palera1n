@@ -56,12 +56,12 @@ jobs:
           echo "CXXFLAGS=-g -O2 -I/usr/x86_64-w64-mingw32/include -D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600" >> $GITHUB_ENV
           echo "LDFLAGS=-L/usr/x86_64-w64-mingw32/lib" >> $GITHUB_ENV
           echo "CROSS_COMPILE=x86_64-w64-mingw32-" >> $GITHUB_ENV
+          echo "CC=x86_64-w64-mingw32-gcc" >> $GITHUB_ENV
+          echo "CXX=x86_64-w64-mingw32-g++" >> $GITHUB_ENV
+          echo "AR=x86_64-w64-mingw32-ar" >> $GITHUB_ENV
+          echo "RANLIB=x86_64-w64-mingw32-ranlib" >> $GITHUB_ENV
+          echo "STRIP=x86_64-w64-mingw32-strip" >> $GITHUB_ENV
           echo "CONFIGURE_ARGS=--host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32 --disable-shared --enable-static" >> $GITHUB_ENV
-          echo "ac_cv_func_malloc_0_nonnull=yes" >> $GITHUB_ENV
-          echo "ac_cv_func_realloc_0_nonnull=yes" >> $GITHUB_ENV
-          echo "ac_cv_c_bigendian=no" >> $GITHUB_ENV
-          echo "lt_cv_deplibs_check_method=pass_all" >> $GITHUB_ENV
-          echo "lt_cv_sys_lib_search_path_spec=/usr/x86_64-w64-mingw32/lib" >> $GITHUB_ENV
 
       - name: Download dependencies (source code)
         run: |
@@ -188,8 +188,10 @@ jobs:
       - name: Build libplist
         run: |
           cd libplist
+          export PATH=/usr/x86_64-w64-mingw32/bin:$PATH
+          export LD_LIBRARY_PATH=/usr/x86_64-w64-mingw32/lib:$LD_LIBRARY_PATH
           ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --host=x86_64-w64-mingw32 --build=x86_64-linux-gnu
+          ./configure $CONFIGURE_ARGS --without-cython --build=$(gcc -dumpmachine)
           make -j$(nproc)
           sudo make install
           cd ..
@@ -198,7 +200,7 @@ jobs:
         run: |
           cd libimobiledevice-glue
           ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --host=x86_64-w64-mingw32 --build=x86_64-linux-gnu
+          ./configure ${{ env.CONFIGURE_ARGS }} --host=x86_64-w64-mingw32
           make -j$(nproc)
           sudo make install
           cd ..
@@ -207,7 +209,7 @@ jobs:
         run: |
           cd libirecovery
           ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --host=x86_64-w64-mingw32 --build=x86_64-linux-gnu
+          ./configure ${{ env.CONFIGURE_ARGS }} --host=x86_64-w64-mingw32
           make -j$(nproc)
           sudo make install
           cd ..
@@ -216,7 +218,7 @@ jobs:
         run: |
           cd libusbmuxd
           ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --host=x86_64-w64-mingw32 --build=x86_64-linux-gnu
+          ./configure ${{ env.CONFIGURE_ARGS }} --host=x86_64-w64-mingw32
           make -j$(nproc)
           sudo make install
           cd ..
@@ -225,7 +227,7 @@ jobs:
         run: |
           cd libimobiledevice
           ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --with-mbedtls --host=x86_64-w64-mingw32 --build=x86_64-linux-gnu
+          ./configure ${{ env.CONFIGURE_ARGS }} --with-mbedtls --host=x86_64-w64-mingw32
           make -j$(nproc)
           sudo make install
           cd ..
@@ -234,7 +236,7 @@ jobs:
         run: |
           cd usbmuxd
           ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --without-systemd --host=x86_64-w64-mingw32 --build=x86_64-linux-gnu
+          ./configure ${{ env.CONFIGURE_ARGS }} --without-systemd --host=x86_64-w64-mingw32
           make -j$(nproc)
           sudo make install
           cd ..
