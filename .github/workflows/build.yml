@@ -118,17 +118,38 @@ jobs:
           make install
           "
 
+      - name: Clone readline
+        shell: cmd
+        run: C:\cygwin64\bin\bash -lc "git clone git://cygwin.com/git/cygwin-packages/readline.git"
+
+      - name: Download readline sources
+        shell: cmd
+        run: C:\cygwin64\bin\bash -lc "cd readline && /usr/bin/cygport readline.cygport download all"
+
+      - name: Configure readline
+        shell: cmd
+        run: |
+          C:\cygwin64\bin\bash -lc "
+          cd readline
+          cd $(/usr/bin/cygport readline.cygport dir)
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-shared --enable-static
+          "
+
       - name: Build readline
         shell: cmd
         run: |
           C:\cygwin64\bin\bash -lc "
-          export PATH=/usr/bin:/usr/local/bin:/mingw64/bin:$PATH
-          git clone git://cygwin.com/git/cygwin-packages/readline.git
           cd readline
-          /usr/bin/cygport readline.cygport download all
           cd $(/usr/bin/cygport readline.cygport dir)
-          ./configure --host=x86_64-w64-mingw32 --build=x86_64-w64-mingw32 --prefix=/mingw64 --disable-shared --enable-static
           make -j$(nproc)
+          "
+
+      - name: Install readline
+        shell: cmd
+        run: |
+          C:\cygwin64\bin\bash -lc "
+          cd readline
+          cd $(/usr/bin/cygport readline.cygport dir)
           make install
           "
 
