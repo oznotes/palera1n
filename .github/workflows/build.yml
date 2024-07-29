@@ -117,6 +117,10 @@ jobs:
           make -j$(nproc)
           make install
           "
+      - name: Install ncurses
+        shell: cmd
+        run: C:\cygwin64\bin\setup-x86_64.exe -q -P libncurses-devel
+        
       - name: Clone readline
         shell: cmd
         run: C:\cygwin64\bin\bash.exe -lc "git clone git://cygwin.com/git/cygwin-packages/readline.git"
