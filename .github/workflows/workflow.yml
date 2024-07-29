@@ -20,8 +20,14 @@ jobs:
 
       - name: Install dependencies
         run: |
-          choco install -y wget
-          choco install -y make
+          choco install -y wget make
+        shell: pwsh
+
+      - name: Prepare build environment
+        run: |
+          $mingwPath = "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64"
+          $env:PATH = "$mingwPath\bin;$env:PATH"
+          echo "MINGW_PATH=$mingwPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         shell: pwsh
 
       - name: Build libplist
@@ -29,7 +35,7 @@ jobs:
           git clone https://github.com/libimobiledevice/libplist.git
           cd libplist
           ./autogen.sh
-          ./configure --host=x86_64-w64-mingw32 --prefix=/c/libplist
+          ./configure --host=x86_64-w64-mingw32 --prefix=${{ env.MINGW_PATH }}
           make
           make install
           cd ..
@@ -38,7 +44,7 @@ jobs:
       - name: Build palera1n
         run: |
           # Add your palera1n build commands here, for example:
-          # make LDFLAGS="-L/c/libplist/lib" CFLAGS="-I/c/libplist/include"
+          # make LDFLAGS="-L${{ env.MINGW_PATH }}/lib" CFLAGS="-I${{ env.MINGW_PATH }}/include"
         shell: msys2 {0}
 
       - name: Upload artifact
