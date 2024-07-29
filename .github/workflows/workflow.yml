@@ -102,18 +102,21 @@ jobs:
 
       - name: Build Mbed TLS
         run: |
-            cd mbedtls-${MBEDTLS_VERSION}
-            mkdir build
-            cd build
-            cmake .. -DCMAKE_TOOLCHAIN_FILE=../../toolchain-mingw64.cmake \
+          cd mbedtls-${{ env.MBEDTLS_VERSION }}
+          cat ../patches/mbedtls/0001-Allow-empty-x509-cert-issuer.patch | patch -sN -d . -p1
+          mkdir build
+          cd build
+          cmake .. \
+            -DCMAKE_TOOLCHAIN_FILE=../../toolchain-mingw64.cmake \
             -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 \
             -DUSE_SHARED_MBEDTLS_LIBRARY=OFF \
             -DENABLE_TESTING=OFF \
             -DENABLE_PROGRAMS=OFF \
             -DCMAKE_BUILD_TYPE=Release
-            make -j$(nproc)
-            sudo make install
-            cd ../..
+          make -j$(nproc)
+          sudo make install
+          cd ../..
+
       - name: Build libusb
         run: |
           cd libusb-${{ env.LIBUSB_VERSION }}
@@ -184,11 +187,21 @@ jobs:
       - name: Build libplist
         run: |
           cd libplist
-          ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --host=x86_64-w64-mingw32 --build=x86_64-linux-gnu
+          autoreconf -fiv
+          ./configure $CONFIGURE_ARGS --host=x86_64-w64-mingw32 --build=x86_64-linux-gnu \
+          CC=x86_64-w64-mingw32-gcc \
+          CXX=x86_64-w64-mingw32-g++ \
+          CFLAGS="-I/usr/x86_64-w64-mingw32/include" \
+          LDFLAGS="-L/usr/x86_64-w64-mingw32/lib" \
+          ac_cv_func_malloc_0_nonnull=yes \
+          ac_cv_func_realloc_0_nonnull=yes \
+          ac_cv_c_bigendian=no \
+          lt_cv_deplibs_check_method=pass_all \
+          lt_cv_sys_lib_search_path_spec=/usr/x86_64-w64-mingw32/lib
           make -j$(nproc)
           sudo make install
           cd ..
+
 
       - name: Build libimobiledevice-glue
         run: |
