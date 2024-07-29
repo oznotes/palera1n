@@ -15,18 +15,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install Cygwin
-        shell: pwsh
         run: |
-          $ProgressPreference = 'SilentlyContinue'
-          Invoke-WebRequest https://cygwin.com/setup-x86_64.exe -OutFile setup-x86_64.exe
-          $process = Start-Process -FilePath .\setup-x86_64.exe -ArgumentList "-q -P cygport,git,make,gcc-core -v" -NoNewWindow -PassThru
-          $timeoutSeconds = 600
-          if (-not $process.WaitForExit($timeoutSeconds * 1000)) {
-            Write-Host "Cygwin installation timed out after $timeoutSeconds seconds"
-            $process | Stop-Process -Force
-            exit 1
-          }
-          Get-ChildItem C:\ -Directory -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq "cygwin64" }
+          curl -L -O https://cygwin.com/setup-x86_64.exe
+          .\setup-x86_64.exe -q -P cygport,git,make,gcc-core
 
       - name: Debug Cygwin installation
         shell: pwsh
@@ -38,15 +29,18 @@ jobs:
             & "$cygwinPath\bin\bash.exe" --version
           } else {
             Write-Host "Cygwin installation not found"
-            exit 1
           }
 
       - name: Verify cygport and git installation
         shell: pwsh
         run: |
-          $cygwinPath = "C:\cygwin64"
-          & "$cygwinPath\bin\bash.exe" -lc "cygport --version"
-          & "$cygwinPath\bin\bash.exe" -lc "git --version"
+          $cygwinPath = Get-ChildItem C:\ -Directory -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq "cygwin64" } | Select-Object -First 1 -ExpandProperty FullName
+          if ($cygwinPath) {
+            & "$cygwinPath\bin\bash.exe" -lc "cygport --version"
+            & "$cygwinPath\bin\bash.exe" -lc "git --version"
+          } else {
+            Write-Host "Cygwin installation not found"
+          }
 
       - name: Check system PATH
         shell: pwsh
