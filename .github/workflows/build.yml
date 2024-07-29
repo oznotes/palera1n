@@ -78,7 +78,18 @@ jobs:
         run: |
           C:\cygwin64\bin\bash.exe -lc "cygport --version"
           C:\cygwin64\bin\bash.exe -lc "git --version"
-          
+
+      - name: Check cygport location
+        shell: cmd
+        run: C:\cygwin64\bin\bash -lc "which cygport"
+
+      - name: List /usr/bin contents
+        shell: cmd
+        run: C:\cygwin64\bin\bash -lc "ls -l /usr/bin | grep cygport"
+
+      - name: Install cygport
+        shell: cmd
+        run: C:\cygwin64\bin\setup-x86_64.exe -q -P cygport
 
       - name: Setup environment
         run: |
@@ -123,7 +134,6 @@ jobs:
           make -j\$(nproc)
           make install
           "
-
 
       - name: Build libplist
         run: |
