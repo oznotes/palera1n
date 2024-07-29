@@ -206,8 +206,17 @@ jobs:
       - name: Build libimobiledevice-glue
         run: |
           cd libimobiledevice-glue
-          ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --host=x86_64-w64-mingw32 --build=x86_64-linux-gnu
+          autoreconf -fiv
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-linux-gnu \
+          CC=x86_64-w64-mingw32-gcc \
+          CXX=x86_64-w64-mingw32-g++ \
+          CFLAGS="-I/usr/x86_64-w64-mingw32/include" \
+          LDFLAGS="-L/usr/x86_64-w64-mingw32/lib" \
+          ac_cv_func_malloc_0_nonnull=yes \
+          ac_cv_func_realloc_0_nonnull=yes \
+          ac_cv_c_bigendian=no \
+          lt_cv_deplibs_check_method=pass_all \
+          lt_cv_sys_lib_search_path_spec=/usr/x86_64-w64-mingw32/lib
           make -j$(nproc)
           sudo make install
           cd ..
