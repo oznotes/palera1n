@@ -191,9 +191,9 @@ jobs:
           export PATH=/usr/x86_64-w64-mingw32/bin:$PATH
           export LD_LIBRARY_PATH=/usr/x86_64-w64-mingw32/lib:$LD_LIBRARY_PATH
           ./autogen.sh
-          ./configure $CONFIGURE_ARGS --without-cython --build=$(gcc -dumpmachine) || touch config.log
-          make -j$(nproc) || true
-          sudo make install || true
+          ./configure $CONFIGURE_ARGS --without-cython --build=x86_64-pc-linux-gnu --host=x86_64-w64-mingw32
+          make -j$(nproc)
+          sudo make install
           cd ..
         continue-on-error: true
 
