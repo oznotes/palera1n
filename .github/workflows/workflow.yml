@@ -1,4 +1,4 @@
-name: Windows Build with WSL
+name: Windows Build with MinGW-w64
 
 on:
   push:
@@ -13,41 +13,36 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Enable WSL
-        run: |
-          wsl --install -d Ubuntu
-        shell: powershell
+      - name: Set up MinGW-w64
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
 
-      - name: Setup WSL
+      - name: Install dependencies
         run: |
-          wsl sudo apt-get update
-          wsl sudo apt-get install -y build-essential git autoconf automake libtool pkg-config
-        shell: powershell
+          choco install -y wget
+          choco install -y make
+        shell: pwsh
 
-      - name: Build libplist in WSL
+      - name: Build libplist
         run: |
-          wsl bash -c '
-            git clone https://github.com/libimobiledevice/libplist.git
-            cd libplist
-            ./autogen.sh
-            ./configure
-            make
-            sudo make install
-            cd ..
-          '
-        shell: powershell
+          git clone https://github.com/libimobiledevice/libplist.git
+          cd libplist
+          ./autogen.sh
+          ./configure --host=x86_64-w64-mingw32 --prefix=/c/libplist
+          make
+          make install
+          cd ..
+        shell: msys2 {0}
 
-      - name: Build palera1n in WSL
+      - name: Build palera1n
         run: |
-          wsl bash -c '
-            cd ${{ github.workspace }}
-            # Add your palera1n build commands here, for example:
-            # make
-          '
-        shell: powershell
+          # Add your palera1n build commands here, for example:
+          # make LDFLAGS="-L/c/libplist/lib" CFLAGS="-I/c/libplist/include"
+        shell: msys2 {0}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: palera1n-windows
-          path: ${{ github.workspace }}/palera1n.exe  # Adjust this path as needed
+          path: palera1n.exe  # Adjust this path as needed
