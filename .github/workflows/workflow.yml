@@ -188,8 +188,6 @@ jobs:
       - name: Build libplist
         run: |
           cd libplist
-          export PATH=/usr/x86_64-w64-mingw32/bin:$PATH
-          export LD_LIBRARY_PATH=/usr/x86_64-w64-mingw32/lib:$LD_LIBRARY_PATH
           ./autogen.sh
           ./configure --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32 --disable-shared --enable-static --without-cython
           make -j$(nproc)
