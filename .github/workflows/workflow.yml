@@ -47,6 +47,7 @@ jobs:
           sudo apt-get install -y mingw-w64 cmake pkg-config autoconf automake autopoint libtool
           sudo pip3 install jsonschema jinja2
 
+
       - name: Setup environment
         run: |
           echo "CHECKRA1N_NAME=windows-x86_64" >> $GITHUB_ENV
@@ -98,23 +99,21 @@ jobs:
           set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
           set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
           EOF
+
       - name: Build Mbed TLS
         run: |
-          cd mbedtls-${{ env.MBEDTLS_VERSION }}
-          cat ../patches/mbedtls/0001-Allow-empty-x509-cert-issuer.patch | patch -sN -d . -p1
-          mkdir build
-          cd build
-          cmake .. \
-            -DCMAKE_TOOLCHAIN_FILE=../../toolchain-mingw64.cmake \
+            cd mbedtls-${MBEDTLS_VERSION}
+            mkdir build
+            cd build
+            cmake .. -DCMAKE_TOOLCHAIN_FILE=../../toolchain-mingw64.cmake \
             -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 \
             -DUSE_SHARED_MBEDTLS_LIBRARY=OFF \
             -DENABLE_TESTING=OFF \
             -DENABLE_PROGRAMS=OFF \
             -DCMAKE_BUILD_TYPE=Release
-          make -j$(nproc)
-          sudo make install
-          cd ../..
-
+            make -j$(nproc)
+            sudo make install
+            cd ../..
       - name: Build libusb
         run: |
           cd libusb-${{ env.LIBUSB_VERSION }}
