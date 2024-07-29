@@ -202,9 +202,7 @@ jobs:
           echo "CXXFLAGS: $CXXFLAGS"
           echo "LDFLAGS: $LDFLAGS"
           ./autogen.sh
-          set -x
           ./configure $CONFIGURE_ARGS --without-cython
-          set +x
           make -j$(nproc)
           sudo make install
           cd ..
