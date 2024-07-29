@@ -57,7 +57,7 @@ jobs:
           echo "LDFLAGS=-L/usr/x86_64-w64-mingw32/lib" >> $GITHUB_ENV
           echo "CROSS_COMPILE=x86_64-w64-mingw32-" >> $GITHUB_ENV
           echo "CONFIGURE_ARGS=--host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32 --disable-shared --enable-static" >> $GITHUB_ENV
-
+   
       - name: Download dependencies (source code)
         run: |
           curl -LOOO \
