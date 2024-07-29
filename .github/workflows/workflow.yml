@@ -129,9 +129,16 @@ jobs:
           cat << EOF > win32.h
           #ifndef _WIN32_H_
           #define _WIN32_H_
-          #include <windows.h>
           #include <winsock2.h>
+          #include <windows.h>
+          #include <io.h>
           typedef HANDLE sigset_t;
+          #define FIONREAD 0x541B
+          #define alarm(seconds) (0)
+          #define ioctl(fd, command, argument) ioctlsocket(fd, command, argument)
+          #define isatty(fd) _isatty(fd)
+          #define _getch getch
+          int getch(void);
           #endif
           EOF
           
@@ -152,6 +159,10 @@ jobs:
           # Modify configure script to use our termcap implementation
           sed -i 's/ac_fn_c_check_func "$ac_func" "ac_cv_func_$ac_func"/$ac_func=yes/' configure
           sed -i 's/for ac_lib in "" termcap tinfo curses ncurses/for ac_lib in ""/' configure
+          
+          # Modify input.c to fix the rl_getc function
+          sed -i 's/if (isatty (fd)/if (isatty (fd))/' input.c
+          sed -i 's/return (_getch ());/return getch();/' input.c
           
           # Configure and build
           ./configure ${{ env.CONFIGURE_ARGS }} \
