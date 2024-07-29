@@ -57,7 +57,7 @@ jobs:
           echo "LDFLAGS=-L/usr/x86_64-w64-mingw32/lib" >> $GITHUB_ENV
           echo "CROSS_COMPILE=x86_64-w64-mingw32-" >> $GITHUB_ENV
           echo "CONFIGURE_ARGS=--host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32 --disable-shared --enable-static" >> $GITHUB_ENV
-   
+
       - name: Download dependencies (source code)
         run: |
           curl -LOOO \
@@ -183,8 +183,18 @@ jobs:
       - name: Build libplist
         run: |
           cd libplist
+          export CC=x86_64-w64-mingw32-gcc
+          export CXX=x86_64-w64-mingw32-g++
+          export AR=x86_64-w64-mingw32-ar
+          export RANLIB=x86_64-w64-mingw32-ranlib
+          export STRIP=x86_64-w64-mingw32-strip
           ./autogen.sh
-          ./configure ${{ env.CONFIGURE_ARGS }} --without-cython --host=x86_64-w64-mingw32
+          ./configure --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32 --disable-shared --enable-static --without-cython \
+            CC=x86_64-w64-mingw32-gcc \
+            CXX=x86_64-w64-mingw32-g++ \
+            CFLAGS="$CFLAGS" \
+            CXXFLAGS="$CXXFLAGS" \
+            LDFLAGS="$LDFLAGS"
           make -j$(nproc)
           sudo make install
           cd ..
