@@ -127,7 +127,27 @@ jobs:
       - name: Build readline
         run: |
           cd readline-${{ env.READLINE_VERSION }}
-          ./configure ${{ env.CONFIGURE_ARGS }}
+          
+          # Create a Windows-specific header
+          cat << EOF > win32.h
+          #ifndef _WIN32_H_
+          #define _WIN32_H_
+          #include <windows.h>
+          #include <winsock2.h>
+          typedef HANDLE sigset_t;
+          #endif
+          EOF
+          
+          # Modify rlprivate.h to include our Windows header
+          sed -i '1i#include "win32.h"' rlprivate.h
+          
+          # Modify configure script to use Windows libraries
+          sed -i 's/-lncurses/-luser32 -lws2_32/g' configure
+          
+          # Configure and build
+          ./configure ${{ env.CONFIGURE_ARGS }} \
+            CPPFLAGS="-D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600" \
+            CFLAGS="$CFLAGS -D__USE_MINGW_ANSI_STDIO=1 -D_WIN32_WINNT=0x0600"
           make -j$(nproc)
           sudo make install
           cd ..
